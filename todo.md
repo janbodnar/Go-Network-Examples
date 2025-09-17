@@ -19,18 +19,6 @@ category for clarity.
 ---
 
 ## 🌐 HTTP Examples
-11. HTTP GET request  
-12. HTTP HEAD request  
-13. HTTP POST with JSON body  
-14. HTTP PUT with file upload  
-15. HTTP DELETE request  
-16. HTTP client with custom headers  
-17. HTTP client with timeout  
-18. HTTP server with routing  
-19. HTTP server with query parameters  
-20. HTTP server with file serving
-
----
 
 ## 📡 Protocol-Level Clients
 21. DNS query over UDP  
