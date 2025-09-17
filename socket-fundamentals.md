@@ -1137,3 +1137,361 @@ names, establishes connections to target servers, and relays data
 bidirectionally. The proxy supports both IP addresses and domain name  
 resolution. SOCKS5 is commonly used for circumventing network restrictions  
 and providing secure tunneling through intermediate servers.
+
+## TCP keepalive client
+
+This client demonstrates how to configure TCP keepalive settings to detect  
+and handle dead connections automatically.
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net"
+	"time"
+)
+
+func main() {
+	conn, err := net.Dial("tcp", "127.0.0.1:8080")
+	if err != nil {
+		log.Fatalf("Failed to connect: %v", err)
+	}
+	defer conn.Close()
+
+	// Enable TCP keepalive
+	tcpConn, ok := conn.(*net.TCPConn)
+	if !ok {
+		log.Fatalf("Connection is not a TCP connection")
+	}
+
+	err = tcpConn.SetKeepAlive(true)
+	if err != nil {
+		log.Printf("Failed to enable keepalive: %v", err)
+	}
+
+	err = tcpConn.SetKeepAlivePeriod(30 * time.Second)
+	if err != nil {
+		log.Printf("Failed to set keepalive period: %v", err)
+	}
+
+	log.Println("Connected with TCP keepalive enabled (30s period)")
+
+	// Set read/write timeouts
+	err = tcpConn.SetReadDeadline(time.Now().Add(5 * time.Minute))
+	if err != nil {
+		log.Printf("Failed to set read deadline: %v", err)
+	}
+
+	// Send periodic messages to test the connection
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	go func() {
+		buffer := make([]byte, 1024)
+		for {
+			n, err := tcpConn.Read(buffer)
+			if err != nil {
+				log.Printf("Read error: %v", err)
+				return
+			}
+			log.Printf("Received: %s", buffer[:n])
+		}
+	}()
+
+	counter := 1
+	for range ticker.C {
+		message := []byte(fmt.Sprintf("Keepalive test message #%d", counter))
+		_, err := tcpConn.Write(message)
+		if err != nil {
+			log.Printf("Write error: %v", err)
+			break
+		}
+		log.Printf("Sent message #%d", counter)
+		counter++
+
+		if counter > 20 { // Send 20 messages then exit
+			break
+		}
+	}
+
+	log.Println("Client finished")
+}
+```
+
+This client connects to a server and enables TCP keepalive with a 30-second  
+period. Keepalive probes are automatically sent by the operating system to  
+detect if the connection is still alive. The client also sets read  
+deadlines and sends periodic test messages. If the remote end becomes  
+unreachable, the keepalive mechanism will eventually detect this and close  
+the connection. This is essential for long-lived connections that might  
+become stale due to network issues, firewalls, or server failures.
+
+## Socket options configuration
+
+This example demonstrates how to configure various socket options to control  
+network behavior, performance, and reliability characteristics.
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net"
+	"syscall"
+	"time"
+)
+
+func main() {
+	// Create a TCP listener
+	listener, err := net.Listen("tcp", ":8084")
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+	defer listener.Close()
+
+	// Get the underlying file descriptor for socket options
+	tcpListener := listener.(*net.TCPListener)
+	file, err := tcpListener.File()
+	if err != nil {
+		log.Fatalf("Failed to get file descriptor: %v", err)
+	}
+	defer file.Close()
+
+	fd := int(file.Fd())
+
+	// Set SO_REUSEADDR to allow address reuse
+	err = syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+	if err != nil {
+		log.Printf("Failed to set SO_REUSEADDR: %v", err)
+	} else {
+		log.Println("Set SO_REUSEADDR")
+	}
+
+	// Set SO_REUSEPORT (Linux specific)
+	err = syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, 0xf, 1) // SO_REUSEPORT
+	if err != nil {
+		log.Printf("Failed to set SO_REUSEPORT: %v", err)
+	} else {
+		log.Println("Set SO_REUSEPORT")
+	}
+
+	// Set TCP_NODELAY to disable Nagle's algorithm
+	err = syscall.SetsockoptInt(fd, syscall.IPPROTO_TCP, syscall.TCP_NODELAY, 1)
+	if err != nil {
+		log.Printf("Failed to set TCP_NODELAY: %v", err)
+	} else {
+		log.Println("Set TCP_NODELAY")
+	}
+
+	log.Println("Socket options configured, listening on :8084")
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Printf("Failed to accept connection: %v", err)
+			continue
+		}
+		go handleSocketOptionsConnection(conn)
+	}
+}
+
+func handleSocketOptionsConnection(conn net.Conn) {
+	defer conn.Close()
+	log.Printf("Connection from %s", conn.RemoteAddr())
+
+	// Configure client connection options
+	tcpConn := conn.(*net.TCPConn)
+
+	// Enable TCP keepalive
+	tcpConn.SetKeepAlive(true)
+	tcpConn.SetKeepAlivePeriod(30 * time.Second)
+
+	// Set buffer sizes
+	file, err := tcpConn.File()
+	if err == nil {
+		fd := int(file.Fd())
+		
+		// Set send buffer size (SO_SNDBUF)
+		syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_SNDBUF, 65536)
+		
+		// Set receive buffer size (SO_RCVBUF)
+		syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_RCVBUF, 65536)
+		
+		// Get current socket options
+		sendBuf, _ := syscall.GetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_SNDBUF)
+		recvBuf, _ := syscall.GetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_RCVBUF)
+		
+		log.Printf("Socket buffers - Send: %d, Receive: %d", sendBuf, recvBuf)
+		file.Close()
+	}
+
+	// Echo server functionality
+	buffer := make([]byte, 1024)
+	for {
+		n, err := conn.Read(buffer)
+		if err != nil {
+			log.Printf("Read error: %v", err)
+			return
+		}
+		
+		response := fmt.Sprintf("Echo: %s", buffer[:n])
+		conn.Write([]byte(response))
+	}
+}
+```
+
+This example demonstrates configuring various socket options using system  
+calls. It sets `SO_REUSEADDR` to allow port reuse, `SO_REUSEPORT` for  
+load distribution, and `TCP_NODELAY` to disable Nagle's algorithm for  
+low-latency communication. The server also configures per-connection  
+options like keepalive settings and buffer sizes. Socket options provide  
+fine-grained control over network behavior, allowing optimization for  
+specific use cases like high-performance servers or real-time applications.
+
+## TCP connection multiplexer
+
+This server demonstrates connection multiplexing using Go's select statement  
+to handle multiple connections concurrently without goroutines per connection.
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net"
+	"time"
+)
+
+type Connection struct {
+	conn   net.Conn
+	id     int
+	buffer []byte
+}
+
+func main() {
+	listener, err := net.Listen("tcp", ":8085")
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+	defer listener.Close()
+
+	log.Println("TCP multiplexer listening on :8085")
+
+	connections := make(map[int]*Connection)
+	connID := 0
+	
+	// Channel for new connections
+	newConn := make(chan net.Conn, 10)
+	
+	// Channel for connection data
+	connData := make(chan struct {
+		id   int
+		data []byte
+		err  error
+	}, 100)
+	
+	// Channel for connection closures
+	connClosed := make(chan int, 10)
+
+	// Accept connections in a goroutine
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				log.Printf("Accept error: %v", err)
+				continue
+			}
+			newConn <- conn
+		}
+	}()
+
+	// Main multiplexing loop
+	for {
+		select {
+		case conn := <-newConn:
+			connID++
+			id := connID
+			connections[id] = &Connection{
+				conn:   conn,
+				id:     id,
+				buffer: make([]byte, 1024),
+			}
+			log.Printf("New connection %d from %s", id, conn.RemoteAddr())
+			
+			// Start reading from this connection
+			go readFromConnection(id, conn, connData, connClosed)
+
+		case data := <-connData:
+			if conn, exists := connections[data.id]; exists {
+				if data.err != nil {
+					log.Printf("Connection %d error: %v", data.id, data.err)
+					conn.conn.Close()
+					delete(connections, data.id)
+				} else {
+					// Echo the data back
+					response := fmt.Sprintf("Multiplexer echo [%d]: %s", data.id, data.data)
+					conn.conn.Write([]byte(response))
+					log.Printf("Connection %d: %s", data.id, data.data)
+					
+					// Continue reading
+					go readFromConnection(data.id, conn.conn, connData, connClosed)
+				}
+			}
+
+		case id := <-connClosed:
+			if conn, exists := connections[id]; exists {
+				log.Printf("Connection %d closed", id)
+				conn.conn.Close()
+				delete(connections, id)
+			}
+
+		case <-time.After(30 * time.Second):
+			// Periodic maintenance - check connection count
+			log.Printf("Active connections: %d", len(connections))
+		}
+	}
+}
+
+func readFromConnection(id int, conn net.Conn, dataChan chan struct {
+	id   int
+	data []byte
+	err  error
+}, closedChan chan int) {
+	
+	// Set read timeout
+	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	
+	buffer := make([]byte, 1024)
+	n, err := conn.Read(buffer)
+	
+	if err != nil {
+		dataChan <- struct {
+			id   int
+			data []byte
+			err  error
+		}{id: id, data: nil, err: err}
+		closedChan <- id
+		return
+	}
+	
+	dataChan <- struct {
+		id   int
+		data []byte
+		err  error
+	}{id: id, data: buffer[:n], err: nil}
+}
+```
+
+This multiplexer handles multiple TCP connections using a single event loop  
+with Go's select statement. Instead of creating a goroutine per connection,  
+it uses channels to coordinate between connection acceptance, data reading,  
+and connection management. The main loop selects between new connections,  
+incoming data, connection closures, and periodic maintenance. This approach  
+can be more efficient for servers handling many concurrent connections,  
+as it reduces goroutine overhead and provides centralized connection  
+management. The pattern is similar to event-driven servers in other  
+languages.
