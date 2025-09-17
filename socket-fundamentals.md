@@ -469,3 +469,671 @@ such as by providing a set of trusted root certificate authorities. A `nil`
 config uses the host's default trust store. After connecting, the client
 sends a basic HTTP request and prints the first 4KB of the response,
 demonstrating that the encrypted communication was successful.
+
+## SSL/TLS TCP server
+
+This server demonstrates how to create a secure TCP server that handles TLS  
+connections with a self-signed certificate for testing purposes.
+
+```go
+package main
+
+import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"io"
+	"log"
+	"math/big"
+	"net"
+	"time"
+)
+
+func main() {
+	cert, err := generateSelfSignedCert()
+	if err != nil {
+		log.Fatalf("Failed to generate certificate: %v", err)
+	}
+
+	config := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+
+	listener, err := tls.Listen("tcp", ":8443", config)
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+	defer listener.Close()
+
+	log.Println("TLS server listening on :8443")
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Printf("Failed to accept connection: %v", err)
+			continue
+		}
+		go handleTLSConnection(conn)
+	}
+}
+
+func handleTLSConnection(conn net.Conn) {
+	defer conn.Close()
+	log.Printf("TLS connection from %s", conn.RemoteAddr())
+	io.Copy(conn, conn) // Echo back
+}
+
+func generateSelfSignedCert() (tls.Certificate, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{"Test"},
+		},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
+		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IPAddresses:  []net.IP{net.IPv4(127, 0, 0, 1)},
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
+
+	return tls.X509KeyPair(certPEM, keyPEM)
+}
+```
+
+This server creates a self-signed certificate at runtime and uses it to  
+provide TLS encryption on port 8443. The `generateSelfSignedCert` function  
+creates an RSA key pair and X.509 certificate valid for localhost. The  
+server accepts TLS connections and echoes data back to clients. In  
+production, you would use proper certificates from a certificate authority  
+rather than self-signed ones.
+
+## Multicast UDP sender
+
+This sender demonstrates how to send UDP packets to a multicast address,  
+allowing multiple receivers to receive the same data simultaneously.
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net"
+	"time"
+)
+
+func main() {
+	multicastAddr := "224.0.0.1:9999"
+	addr, err := net.ResolveUDPAddr("udp", multicastAddr)
+	if err != nil {
+		log.Fatalf("Failed to resolve multicast address: %v", err)
+	}
+
+	conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		log.Fatalf("Failed to dial multicast address: %v", err)
+	}
+	defer conn.Close()
+
+	log.Printf("Sending to multicast group %s", multicastAddr)
+
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	counter := 1
+	for range ticker.C {
+		message := fmt.Sprintf("Multicast message #%d", counter)
+		_, err := conn.Write([]byte(message))
+		if err != nil {
+			log.Printf("Failed to send message: %v", err)
+			continue
+		}
+		log.Printf("Sent: %s", message)
+		counter++
+	}
+}
+```
+
+This sender joins the multicast group `224.0.0.1:9999` and sends periodic  
+messages every 2 seconds. The address `224.0.0.1` is reserved for "All  
+Systems" multicast in IPv4. The sender uses `net.DialUDP` to establish a  
+connection to the multicast address, then sends numbered messages in a  
+loop. Multiple receivers can join this multicast group to receive the  
+same messages simultaneously, making it useful for broadcasting data  
+to multiple clients efficiently.
+
+## Multicast UDP receiver
+
+This receiver joins a multicast group and listens for messages sent by  
+multicast senders, demonstrating one-to-many communication.
+
+```go
+package main
+
+import (
+	"log"
+	"net"
+
+	"golang.org/x/net/ipv4"
+)
+
+func main() {
+	multicastAddr := "224.0.0.1:9999"
+	addr, err := net.ResolveUDPAddr("udp", multicastAddr)
+	if err != nil {
+		log.Fatalf("Failed to resolve multicast address: %v", err)
+	}
+
+	conn, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		log.Fatalf("Failed to listen on multicast address: %v", err)
+	}
+	defer conn.Close()
+
+	pc := ipv4.NewPacketConn(conn)
+	defer pc.Close()
+
+	// Join the multicast group
+	intf, err := net.InterfaceByName("eth0") // Use appropriate interface
+	if err != nil {
+		// Try to find any available interface
+		interfaces, _ := net.Interfaces()
+		for _, i := range interfaces {
+			if i.Flags&net.FlagUp != 0 && i.Flags&net.FlagLoopback == 0 {
+				intf = &i
+				break
+			}
+		}
+	}
+
+	if intf != nil {
+		err = pc.JoinGroup(intf, &net.UDPAddr{IP: net.ParseIP("224.0.0.1")})
+		if err != nil {
+			log.Printf("Failed to join multicast group: %v", err)
+		} else {
+			log.Printf("Joined multicast group on interface %s", intf.Name)
+		}
+	}
+
+	log.Printf("Listening for multicast messages on %s", multicastAddr)
+
+	buffer := make([]byte, 1024)
+	for {
+		n, addr, err := conn.ReadFromUDP(buffer)
+		if err != nil {
+			log.Printf("Error reading multicast message: %v", err)
+			continue
+		}
+		log.Printf("Received from %s: %s", addr, buffer[:n])
+	}
+}
+```
+
+This receiver listens on the multicast address `224.0.0.1:9999` and joins  
+the multicast group using the `golang.org/x/net/ipv4` package. It  
+automatically selects an available network interface or uses a specified  
+one to join the group. Once joined, the receiver enters a loop to read  
+multicast messages from any sender in the group. Multiple receivers can  
+join the same group and all will receive the same messages, demonstrating  
+the broadcast nature of multicast communication.
+
+## TCP connection pooling client
+
+This client demonstrates connection pooling to efficiently reuse TCP  
+connections and reduce the overhead of establishing new connections.
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net"
+	"sync"
+	"time"
+)
+
+type ConnectionPool struct {
+	address     string
+	maxConns    int
+	connections chan net.Conn
+	mu          sync.Mutex
+	closed      bool
+}
+
+func NewConnectionPool(address string, maxConns int) *ConnectionPool {
+	return &ConnectionPool{
+		address:     address,
+		maxConns:    maxConns,
+		connections: make(chan net.Conn, maxConns),
+	}
+}
+
+func (p *ConnectionPool) Get() (net.Conn, error) {
+	select {
+	case conn := <-p.connections:
+		// Test if connection is still alive
+		conn.SetReadDeadline(time.Now().Add(1 * time.Millisecond))
+		buffer := make([]byte, 1)
+		_, err := conn.Read(buffer)
+		conn.SetReadDeadline(time.Time{})
+		if err == nil {
+			return conn, nil
+		}
+		conn.Close()
+	default:
+	}
+
+	// Create new connection
+	return net.Dial("tcp", p.address)
+}
+
+func (p *ConnectionPool) Put(conn net.Conn) {
+	if conn == nil {
+		return
+	}
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.closed {
+		conn.Close()
+		return
+	}
+
+	select {
+	case p.connections <- conn:
+	default:
+		conn.Close() // Pool is full
+	}
+}
+
+func (p *ConnectionPool) Close() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.closed {
+		return
+	}
+	p.closed = true
+
+	close(p.connections)
+	for conn := range p.connections {
+		conn.Close()
+	}
+}
+
+func main() {
+	pool := NewConnectionPool("127.0.0.1:8080", 5)
+	defer pool.Close()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+
+			conn, err := pool.Get()
+			if err != nil {
+				log.Printf("Worker %d: Failed to get connection: %v", id, err)
+				return
+			}
+
+			// Use the connection
+			message := fmt.Sprintf("Hello from worker %d", id)
+			conn.Write([]byte(message))
+
+			buffer := make([]byte, 1024)
+			n, err := conn.Read(buffer)
+			if err != nil {
+				log.Printf("Worker %d: Read error: %v", id, err)
+				conn.Close()
+				return
+			}
+
+			log.Printf("Worker %d: Response: %s", id, buffer[:n])
+			pool.Put(conn) // Return connection to pool
+		}(i)
+	}
+
+	wg.Wait()
+}
+```
+
+This example implements a simple connection pool that maintains a pool of  
+TCP connections to reduce connection establishment overhead. The  
+`ConnectionPool` struct manages up to `maxConns` connections in a buffered  
+channel. The `Get` method retrieves an existing connection or creates a new  
+one if none are available. It tests connection liveness before returning  
+cached connections. The `Put` method returns connections to the pool for  
+reuse. Multiple goroutines demonstrate concurrent usage of the pool,  
+showing how connection pooling can improve performance in high-throughput  
+applications.
+
+## Rate-limited TCP server
+
+This server demonstrates how to implement rate limiting to control the  
+number of requests processed per time period, preventing resource exhaustion.
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net"
+	"time"
+
+	"golang.org/x/time/rate"
+)
+
+func main() {
+	// Allow 10 requests per second with a burst of 20
+	limiter := rate.NewLimiter(rate.Limit(10), 20)
+
+	listener, err := net.Listen("tcp", ":8082")
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+	defer listener.Close()
+
+	log.Println("Rate-limited server listening on :8082")
+	log.Println("Rate limit: 10 requests/second, burst: 20")
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Printf("Failed to accept connection: %v", err)
+			continue
+		}
+		go handleRateLimitedConnection(conn, limiter)
+	}
+}
+
+func handleRateLimitedConnection(conn net.Conn, limiter *rate.Limiter) {
+	defer conn.Close()
+	log.Printf("Connection from %s", conn.RemoteAddr())
+
+	buffer := make([]byte, 1024)
+	for {
+		n, err := conn.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				log.Printf("Connection closed by %s", conn.RemoteAddr())
+				return
+			}
+			log.Printf("Read error from %s: %v", conn.RemoteAddr(), err)
+			return
+		}
+
+		// Check rate limit before processing request
+		if !limiter.Allow() {
+			log.Printf("Rate limit exceeded for %s", conn.RemoteAddr())
+			conn.Write([]byte("Rate limit exceeded. Please try again later.\n"))
+			continue
+		}
+
+		// Process the request (echo in this case)
+		log.Printf("Processing request from %s: %s", conn.RemoteAddr(), buffer[:n])
+		
+		// Simulate some processing time
+		time.Sleep(100 * time.Millisecond)
+		
+		response := "Processed: " + string(buffer[:n])
+		conn.Write([]byte(response))
+	}
+}
+```
+
+This server uses the `golang.org/x/time/rate` package to implement a token  
+bucket rate limiter that allows 10 requests per second with a burst capacity  
+of 20. Each incoming request is checked against the rate limiter using  
+`limiter.Allow()`. If the rate limit is exceeded, the server sends an error  
+message instead of processing the request. This prevents the server from  
+being overwhelmed by too many requests and helps maintain stable  
+performance. The rate limiter is shared across all connections, providing  
+global rate limiting for the entire server.
+
+## TCP proxy server
+
+This server acts as a TCP proxy, forwarding traffic between clients and a  
+backend server, useful for load balancing or traffic inspection.
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net"
+	"sync"
+)
+
+func main() {
+	proxyAddr := ":8083"
+	targetAddr := "127.0.0.1:8080"
+
+	listener, err := net.Listen("tcp", proxyAddr)
+	if err != nil {
+		log.Fatalf("Failed to listen on proxy address: %v", err)
+	}
+	defer listener.Close()
+
+	log.Printf("TCP proxy listening on %s, forwarding to %s", proxyAddr, targetAddr)
+
+	for {
+		clientConn, err := listener.Accept()
+		if err != nil {
+			log.Printf("Failed to accept client connection: %v", err)
+			continue
+		}
+		go handleProxy(clientConn, targetAddr)
+	}
+}
+
+func handleProxy(clientConn net.Conn, targetAddr string) {
+	defer clientConn.Close()
+	log.Printf("New proxy connection from %s", clientConn.RemoteAddr())
+
+	// Connect to target server
+	targetConn, err := net.Dial("tcp", targetAddr)
+	if err != nil {
+		log.Printf("Failed to connect to target %s: %v", targetAddr, err)
+		return
+	}
+	defer targetConn.Close()
+
+	log.Printf("Connected to target %s", targetAddr)
+
+	// Use WaitGroup to ensure both directions complete
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Copy data from client to target
+	go func() {
+		defer wg.Done()
+		defer targetConn.Close()
+		bytes, err := io.Copy(targetConn, clientConn)
+		if err != nil {
+			log.Printf("Error copying client->target: %v", err)
+		}
+		log.Printf("Client->Target: %d bytes", bytes)
+	}()
+
+	// Copy data from target to client
+	go func() {
+		defer wg.Done()
+		defer clientConn.Close()
+		bytes, err := io.Copy(clientConn, targetConn)
+		if err != nil {
+			log.Printf("Error copying target->client: %v", err)
+		}
+		log.Printf("Target->Client: %d bytes", bytes)
+	}()
+
+	wg.Wait()
+	log.Printf("Proxy connection from %s closed", clientConn.RemoteAddr())
+}
+```
+
+This proxy server listens on port 8083 and forwards all traffic to a target  
+server at `127.0.0.1:8080`. For each client connection, it establishes a  
+connection to the target server and uses two goroutines to copy data  
+bidirectionally using `io.Copy`. The `sync.WaitGroup` ensures both copy  
+operations complete before closing the connections. This pattern is useful  
+for implementing load balancers, reverse proxies, or network debugging  
+tools. The proxy is transparent to both the client and server, simply  
+relaying data between them.
+
+## SOCKS5 proxy server
+
+This server implements a basic SOCKS5 proxy that allows clients to connect  
+to remote servers through the proxy, commonly used for network tunneling.
+
+```go
+package main
+
+import (
+	"encoding/binary"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"sync"
+)
+
+func main() {
+	listener, err := net.Listen("tcp", ":1080")
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+	defer listener.Close()
+
+	log.Println("SOCKS5 proxy server listening on :1080")
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Printf("Failed to accept connection: %v", err)
+			continue
+		}
+		go handleSOCKS5(conn)
+	}
+}
+
+func handleSOCKS5(conn net.Conn) {
+	defer conn.Close()
+
+	// SOCKS5 authentication negotiation
+	buffer := make([]byte, 256)
+	n, err := conn.Read(buffer)
+	if err != nil || n < 2 {
+		log.Printf("Failed to read auth methods: %v", err)
+		return
+	}
+
+	// Check version (should be 5)
+	if buffer[0] != 0x05 {
+		log.Printf("Unsupported SOCKS version: %d", buffer[0])
+		return
+	}
+
+	// Respond with "no authentication required"
+	conn.Write([]byte{0x05, 0x00})
+
+	// Read connection request
+	n, err = conn.Read(buffer)
+	if err != nil || n < 4 {
+		log.Printf("Failed to read connection request: %v", err)
+		return
+	}
+
+	// Parse request
+	if buffer[0] != 0x05 || buffer[1] != 0x01 {
+		conn.Write([]byte{0x05, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+		return
+	}
+
+	var targetAddr string
+	switch buffer[3] {
+	case 0x01: // IPv4
+		if n < 10 {
+			conn.Write([]byte{0x05, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+			return
+		}
+		ip := net.IPv4(buffer[4], buffer[5], buffer[6], buffer[7])
+		port := binary.BigEndian.Uint16(buffer[8:10])
+		targetAddr = fmt.Sprintf("%s:%d", ip, port)
+	case 0x03: // Domain name
+		if n < 5 {
+			conn.Write([]byte{0x05, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+			return
+		}
+		domainLen := int(buffer[4])
+		if n < 5+domainLen+2 {
+			conn.Write([]byte{0x05, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+			return
+		}
+		domain := string(buffer[5 : 5+domainLen])
+		port := binary.BigEndian.Uint16(buffer[5+domainLen : 5+domainLen+2])
+		targetAddr = fmt.Sprintf("%s:%d", domain, port)
+	default:
+		conn.Write([]byte{0x05, 0x08, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+		return
+	}
+
+	// Connect to target
+	targetConn, err := net.Dial("tcp", targetAddr)
+	if err != nil {
+		log.Printf("Failed to connect to %s: %v", targetAddr, err)
+		conn.Write([]byte{0x05, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+		return
+	}
+	defer targetConn.Close()
+
+	// Send success response
+	conn.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+
+	log.Printf("SOCKS5 tunnel established: %s -> %s", conn.RemoteAddr(), targetAddr)
+
+	// Relay data bidirectionally
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		io.Copy(targetConn, conn)
+	}()
+
+	go func() {
+		defer wg.Done()
+		io.Copy(conn, targetConn)
+	}()
+
+	wg.Wait()
+}
+```
+
+This SOCKS5 proxy implements the basic SOCKS5 protocol for tunneling TCP  
+connections. It handles the authentication negotiation (using no  
+authentication), parses connection requests for IPv4 addresses and domain  
+names, establishes connections to target servers, and relays data  
+bidirectionally. The proxy supports both IP addresses and domain name  
+resolution. SOCKS5 is commonly used for circumventing network restrictions  
+and providing secure tunneling through intermediate servers.
