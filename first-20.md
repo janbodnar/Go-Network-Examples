@@ -6,7 +6,8 @@ Here are 20 essential Go networking code examples to help students get started. 
 
 ### 1. Simple TCP Echo Server
 
-This server listens on a TCP port and echoes back any data it receives from a client.
+This server listens on a TCP port and echoes back any data it receives from a  
+client.  
 
 ```go
 package main
@@ -41,11 +42,22 @@ func handleConnection(conn net.Conn) {
 }
 ```
 
+The `net.Listen("tcp", ":8080")` function creates a TCP listener on port 8080.  
+The empty host string means it will listen on all available interfaces  
+(0.0.0.0). The main loop continuously calls `listener.Accept()` to wait for  
+incoming connections. Each new connection is handled in a separate goroutine  
+using `go handleConnection(conn)`, enabling the server to handle multiple  
+clients concurrently. The `handleConnection` function uses `io.Copy(conn, conn)`  
+which reads data from the connection and immediately writes it back, creating  
+the echo behavior. The `defer conn.Close()` ensures the connection is properly  
+closed when the function exits.  
+
 ---
 
 ### 2. Simple TCP Client
 
-This client connects to the TCP server, sends a message, and prints the response.
+This client connects to the TCP server, sends a message, and prints the  
+response.  
 
 ```go
 package main
@@ -76,11 +88,21 @@ func main() {
 }
 ```
 
+The `net.Dial("tcp", "localhost:8080")` establishes a TCP connection to the  
+server running on localhost port 8080. This client creates an interactive  
+session where user input is sent to the server and responses are displayed.  
+Two `io.Copy` operations run concurrently: one goroutine copies data from the  
+server connection to stdout (displaying server responses), while the main  
+thread copies data from stdin to the server connection (sending user input).  
+This bidirectional communication continues until the user types 'exit' or  
+an error occurs. The `defer conn.Close()` ensures the connection is properly  
+closed when the function exits.  
+
 ---
 
 ### 3. Simple UDP Echo Server
 
-A UDP server that listens for packets and echoes them back to the sender.
+A UDP server that listens for packets and echoes them back to the sender.  
 
 ```go
 package main
@@ -119,11 +141,21 @@ func main() {
 }
 ```
 
+UDP is a connectionless protocol, unlike TCP which maintains persistent  
+connections. The `net.ResolveUDPAddr("udp", ":8080")` resolves the UDP  
+address, and `net.ListenUDP()` creates a UDP socket bound to port 8080.  
+The server uses `ReadFromUDP()` to receive packets, which returns the  
+received data, the number of bytes read, and the sender's address.  
+`WriteToUDP()` sends the echo response back to the original sender using  
+their address. The 1024-byte buffer limits the maximum packet size that  
+can be processed. Error handling allows the server to continue running  
+even if individual packet operations fail.  
+
 ---
 
 ### 4. Simple UDP Client
 
-A UDP client that sends a message to the UDP server and waits for the echo.
+A UDP client that sends a message to the UDP server and waits for the echo.  
 
 ```go
 package main
@@ -165,6 +197,17 @@ func main() {
 	fmt.Printf("Echo from server: %s", string(buffer[:n]))
 }
 ```
+
+The UDP client uses `net.ResolveUDPAddr()` to resolve the server's address  
+and `net.DialUDP()` to create a UDP connection. The second parameter `nil`  
+means the operating system will choose a local address automatically.  
+`bufio.NewReader(os.Stdin)` creates a buffered reader for user input, and  
+`ReadString('\n')` reads until a newline character. The client sends the  
+message using `conn.Write()` and then waits for the echo response with  
+`ReadFromUDP()`. Unlike TCP, UDP doesn't guarantee delivery or ordering,  
+making it faster but less reliable. The client assumes the server will  
+respond, but in real applications, you might want to implement timeouts  
+or retry logic.  
 
 ---
 
