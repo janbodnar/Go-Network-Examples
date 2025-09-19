@@ -295,8 +295,9 @@ func main() {
 			log.Printf("Error reading from raw socket: %v", err)
 			continue
 		}
-		log.Printf("Received packet from %s: version=%d, header length=%d, protocol=%d, payload length=%d",
-			header.Src, header.Version, header.Len, header.Protocol, len(payload))
+		log.Printf("Received packet from %s: version=%d, header length=%d, "+
+			"protocol=%d, payload length=%d", header.Src, header.Version, 
+			header.Len, header.Protocol, len(payload))
 	}
 }
 ```
@@ -544,13 +545,15 @@ func generateSelfSignedCert() (tls.Certificate, error) {
 		IPAddresses:  []net.IP{net.IPv4(127, 0, 0, 1)},
 	}
 
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+	certDER, err := x509.CreateCertificate(rand.Reader, &template,
+		&template, &key.PublicKey, key)
 	if err != nil {
 		return tls.Certificate{}, err
 	}
 
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
-	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(key)})
 
 	return tls.X509KeyPair(certPEM, keyPEM)
 }
@@ -935,7 +938,8 @@ func main() {
 	}
 	defer listener.Close()
 
-	log.Printf("TCP proxy listening on %s, forwarding to %s", proxyAddr, targetAddr)
+	log.Printf("TCP proxy listening on %s, forwarding to %s",
+		proxyAddr, targetAddr)
 
 	for {
 		clientConn, err := listener.Accept()
@@ -1110,7 +1114,8 @@ func handleSOCKS5(conn net.Conn) {
 	// Send success response
 	conn.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 
-	log.Printf("SOCKS5 tunnel established: %s -> %s", conn.RemoteAddr(), targetAddr)
+	log.Printf("SOCKS5 tunnel established: %s -> %s",
+		conn.RemoteAddr(), targetAddr)
 
 	// Relay data bidirectionally
 	var wg sync.WaitGroup

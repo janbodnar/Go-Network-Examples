@@ -2,8 +2,9 @@
 
 ## Visibility & Scanning
 
-This section covers tools for discovering network hosts, open ports, and services.
-These examples form the foundation of network mapping and security auditing.
+This section covers tools for discovering network hosts, open ports, and  
+services. These examples form the foundation of network mapping and security  
+auditing.  
 
 ### TCP connect scanner
 
@@ -59,11 +60,12 @@ func main() {
 }
 ```
 
-This Go program takes a host, a starting port, and an ending port as command-line
-arguments. It then scans the specified port range on the host. It uses goroutines
-for concurrency and a `sync.WaitGroup` to wait for all goroutines to finish.
-The `net.DialTimeout` function is used to attempt a connection with a timeout of
-one second. If a connection is successful, the port is reported as open.
+This Go program takes a host, a starting port, and an ending port as  
+command-line arguments. It then scans the specified port range on the host.  
+It uses goroutines for concurrency and a `sync.WaitGroup` to wait for all  
+goroutines to finish. The `net.DialTimeout` function is used to attempt a  
+connection with a timeout of one second. If a connection is successful, the  
+port is reported as open.  
 
 ### TCP SYN scanner
 
@@ -72,8 +74,9 @@ port is open, avoiding a full connection. It is stealthier than a connect scan.
 
 ```go
 // This program is a TCP SYN scanner. It sends a SYN packet to a range of ports
-// on a target host and waits for a SYN-ACK response to determine if a port is open.
-// This is a "half-open" scan because it does not complete the TCP three-way handshake.
+// on a target host and waits for a SYN-ACK response to determine if a port is 
+// open. This is a "half-open" scan because it does not complete the TCP 
+// three-way handshake.
 //
 // This program must be run as root.
 //
@@ -95,8 +98,8 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-// getLocalIP returns the local IP address that will be used to send packets to the
-// destination.
+// getLocalIP returns the local IP address that will be used to send packets 
+// to the destination.
 func getLocalIP(dstip net.IP) (net.IP, error) {
 	serverAddr, err := net.ResolveUDPAddr("udp", dstip.String()+":12345")
 	if err != nil {
@@ -120,7 +123,8 @@ type scanner struct {
 	wg        sync.WaitGroup
 }
 
-func newScanner(host string, startPort, endPort int, timeout time.Duration) *scanner {
+func newScanner(host string, startPort, endPort int, 
+		timeout time.Duration) *scanner {
 	return &scanner{
 		host:      host,
 		startPort: startPort,
@@ -164,7 +168,8 @@ func (s *scanner) run() {
 	close(s.results)
 }
 
-func (s *scanner) sendSYN(conn net.PacketConn, dstip net.IP, port layers.TCPPort) {
+func (s *scanner) sendSYN(conn net.PacketConn, dstip net.IP, 
+		port layers.TCPPort) {
 	defer s.wg.Done()
 
 	// Our IP header... not used, but necessary for TCP checksumming.
@@ -257,21 +262,23 @@ This program sends a raw TCP SYN packet to each port in a given range. It then
 listens for SYN-ACK responses to identify open ports. This technique is known as
 a "half-open" scan because it doesn't complete the TCP handshake.
 
-**Note:** This program requires root privileges to run and depends on the `gopacket`
-library. You can install it with `go get github.com/google/gopacket`.
+**Note:** This program requires root privileges to run and depends on the  
+`gopacket` library. You can install it with `go get github.com/google/gopacket`.  
 
 ### UDP port scanner
 
 A UDP port scanner sends a UDP packet to a target port. If an ICMP "port
-unreachable" error is returned, the port is closed. Otherwise, it is assumed open.
+unreachable" error is returned, the port is closed. Otherwise, it is assumed  
+open.  
 
 ```go
-// This program is a basic UDP port scanner. It sends a UDP packet to a range of ports
-// on a target host. If it doesn't receive an immediate "connection refused" error,
-// it considers the port to be open or filtered.
+// This program is a basic UDP port scanner. It sends a UDP packet to a range 
+// of ports on a target host. If it doesn't receive an immediate "connection 
+// refused" error, it considers the port to be open or filtered.
 //
-// Note: UDP scanning is inherently unreliable. A lack of response could mean the
-// port is open, or that the packet was lost, or that a firewall is dropping it.
+// Note: UDP scanning is inherently unreliable. A lack of response could mean 
+// the port is open, or that the packet was lost, or that a firewall is 
+// dropping it.
 // A more advanced scanner would listen for ICMP "port unreachable" messages to
 // definitively determine if a port is closed.
 package main
@@ -309,10 +316,12 @@ func main() {
 		go func(p int) {
 			defer wg.Done()
 			address := fmt.Sprintf("%s:%d", host, p)
-			// We use DialTimeout to avoid waiting forever on a port that doesn't respond.
+			// We use DialTimeout to avoid waiting forever on a port that doesn't
+			// respond.
 			conn, err := net.DialTimeout("udp", address, 1*time.Second)
 			if err != nil {
-				// On some systems, a "connection refused" error will be returned for a closed UDP port.
+				// On some systems, a "connection refused" error will be returned for a
+				// closed UDP port.
 				// However, this is not guaranteed.
 				return
 			}
@@ -437,7 +446,9 @@ func main() {
 	case ipv4.ICMPTypeEchoReply:
 		fmt.Printf("received echo reply from %s in %v\n", peer, duration)
 	default:
-		fmt.Printf("received unexpected ICMP message type: %v from %s\n", replyMsg.Type, peer)
+		fmt.Printf("received unexpected ICMP message type: %v from %s
+",
+			replyMsg.Type, peer)
 	}
 }
 ```
@@ -453,7 +464,8 @@ parse the ICMP messages.
 
 ### ICMP traceroute
 
-An ICMP traceroute sends ICMP echo requests with increasing TTL values to map the
+An ICMP traceroute sends ICMP echo requests with increasing TTL values to
+map the
 path to a destination host, identifying routers along the way.
 
 ```go
@@ -504,7 +516,8 @@ func main() {
 	defer c.Close()
 
 	p := ipv4.NewPacketConn(c)
-	if err := p.SetControlMessage(ipv4.FlagTTL|ipv4.FlagSrc|ipv4.FlagDst|ipv4.FlagInterface, true); err != nil {
+	if err := p.SetControlMessage(ipv4.FlagTTL|ipv4.FlagSrc|ipv4.FlagDst|
+		ipv4.FlagInterface, true); err != nil {
 		fmt.Printf("error setting control message: %v\n", err)
 		os.Exit(1)
 	}
@@ -717,7 +730,9 @@ location, such as country, city, and ISP.
 
 ### TCP traceroute
 
-This tool performs a traceroute to a destination host and port by sending TCP SYN packets with increasing TTL values. It listens for ICMP "Time Exceeded" messages from routers along the path to discover the route.
+This tool performs a traceroute to a destination host and port by sending  
+TCP SYN packets with increasing TTL values. It listens for ICMP "Time  
+Exceeded" messages from routers along the path to discover the route.  
 
 ```go
 package main
@@ -809,7 +824,8 @@ func main() {
 			continue
 		}
 
-		packet := gopacket.NewPacket(reply[:n], layers.LayerTypeIPv4, gopacket.Default)
+		packet := gopacket.NewPacket(reply[:n], layers.LayerTypeIPv4,
+			gopacket.Default)
 		if icmpLayer := packet.Layer(layers.LayerTypeICMPv4); icmpLayer != nil {
 			icmp, _ := icmpLayer.(*layers.ICMPv4)
 			if icmp.TypeCode.Type() == layers.ICMPv4TypeTimeExceeded {
@@ -843,14 +859,17 @@ func getOurIP() net.IP {
 }
 ```
 
-Note that this tool requires the `github.com/google/gopacket` and `golang.org/x/net/ipv4` packages and must be run with root privileges to create raw sockets.
+Note that this tool requires the `github.com/google/gopacket` and  
+`golang.org/x/net/ipv4` packages and must be run with root privileges to  
+create raw sockets.  
 
 ---
 
 ## Latency & Performance
 
-This section focuses on tools for measuring network performance, including latency,
-jitter, and throughput. These are critical for diagnosing bottlenecks.
+This section focuses on tools for measuring network performance, including  
+latency, jitter, and throughput. These are critical for diagnosing  
+bottlenecks.  
 
 ### HTTP latency tester
 
