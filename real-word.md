@@ -1,8 +1,8 @@
 # Web crawler with concurrency
 
-This example shows a simple concurrent web crawler. It starts from a seed
-URL, fetches the page, extracts all links, and then recursively crawls
-the discovered links in parallel using goroutines.
+This example shows a simple concurrent web crawler. It starts from a seed  
+URL, fetches the page, extracts all links, and then recursively crawls  
+the discovered links in parallel using goroutines.  
 
 ```go
 package main
@@ -42,7 +42,8 @@ func fetchAndParse(url string) (*html.Node, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get URL %s: status code %d", url, resp.StatusCode)
+		return nil, fmt.Errorf("failed to get URL %s: status code %d", url, 
+			resp.StatusCode)
 	}
 
 	doc, err := html.Parse(resp.Body)
@@ -123,22 +124,22 @@ func main() {
 }
 ```
 
-This code defines a `crawl` function that fetches and parses a URL,
-extracts links, and then spawns new goroutines to crawl those links.
-A `Visited` struct with a mutex is used to safely track visited URLs
-across multiple goroutines, preventing duplicate work and infinite loops.
-The main function initializes the process and uses a channel to wait for
-the initial crawl to complete, with a timeout to prevent it from running
-indefinitely. This example demonstrates a fundamental pattern for
-concurrent network clients in Go.
+This code defines a `crawl` function that fetches and parses a URL,  
+extracts links, and then spawns new goroutines to crawl those links.  
+A `Visited` struct with a mutex is used to safely track visited URLs  
+across multiple goroutines, preventing duplicate work and infinite loops.  
+The main function initializes the process and uses a channel to wait for  
+the initial crawl to complete, with a timeout to prevent it from running  
+indefinitely. This example demonstrates a fundamental pattern for  
+concurrent network clients in Go.  
 
 ---
 
 # REST API client with pagination
 
-This example demonstrates how to build a REST API client that handles
-paginated responses. It uses the GitHub API to fetch all stargazers for a
-repository, following the `Link` header to navigate through pages.
+This example demonstrates how to build a REST API client that handles  
+paginated responses. It uses the GitHub API to fetch all stargazers for a  
+repository, following the `Link` header to navigate through pages.  
 
 ```go
 package main
@@ -164,7 +165,8 @@ func findNextPage(resp *http.Response) string {
 	}
 
 	// The Link header contains URLs in the format:
-	// <https://api.github.com/repositories/1300192/stargazers?page=2>; rel="next", ...
+	// <https://api.github.com/repositories/1300192/stargazers?page=2>; 
+	// rel="next", ...
 	re := regexp.MustCompile(`<([^>]+)>;\s*rel="next"`)
 	matches := re.FindStringSubmatch(linkHeader)
 	if len(matches) > 1 {
@@ -226,20 +228,20 @@ func main() {
 }
 ```
 
-This code fetches a list of stargazers from the GitHub API. The
-`getStargazers` function repeatedly makes HTTP GET requests, and after each
-request, it calls `findNextPage` to parse the `Link` header for the URL of
-the next page of results. The loop continues until there are no more "next"
-pages. This is a common pattern for consuming paginated APIs and shows how
-to handle headers and JSON decoding in Go.
+This code fetches a list of stargazers from the GitHub API. The  
+`getStargazers` function repeatedly makes HTTP GET requests, and after each  
+request, it calls `findNextPage` to parse the `Link` header for the URL of  
+the next page of results. The loop continues until there are no more "next"  
+pages. This is a common pattern for consuming paginated APIs and shows how  
+to handle headers and JSON decoding in Go.  
 
 ---
 
 # OAuth2 token fetcher
 
-This example demonstrates how to fetch an OAuth2 access token using the
-client credentials flow. This flow is typically used for machine-to-machine
-authentication. The `golang.org/x/oauth2` package simplifies this process.
+This example demonstrates how to fetch an OAuth2 access token using the  
+client credentials flow. This flow is typically used for machine-to-machine  
+authentication. The `golang.org/x/oauth2` package simplifies this process.  
 
 ```go
 package main
@@ -280,22 +282,22 @@ func main() {
 }
 ```
 
-This code sets up an OAuth2 configuration with a client ID, secret, and
-token URL. It then uses the `config.Token` method to request an access
-token from the provider. The `context.Background()` provides a default
-context for the request. The resulting token, which includes the access
-token, type, and expiration, is then printed. This example can be easily
-adapted to work with any OAuth2 provider that supports the client
-credentials grant.
+This code sets up an OAuth2 configuration with a client ID, secret, and  
+token URL. It then uses the `config.Token` method to request an access  
+token from the provider. The `context.Background()` provides a default  
+context for the request. The resulting token, which includes the access  
+token, type, and expiration, is then printed. This example can be easily  
+adapted to work with any OAuth2 provider that supports the client  
+credentials grant.  
 
 ---
 
 # Git client over TCP
 
-This example demonstrates a basic Git client that connects to a Git server
-over TCP (port 9418) and fetches the list of references (branches and
-tags). It implements a small part of the Git wire protocol, showing how to
-work with a custom binary protocol.
+This example demonstrates a basic Git client that connects to a Git server  
+over TCP (port 9418) and fetches the list of references (branches and  
+tags). It implements a small part of the Git wire protocol, showing how to  
+work with a custom binary protocol.  
 
 ```go
 package main
@@ -332,7 +334,8 @@ func main() {
 
 	// Construct the request to fetch the refs.
 	// The format is "git-upload-pack /path/to/repo.git\0host=hostname\0"
-	request := fmt.Sprintf("git-upload-pack /%s.git\x00host=%s\x00", repo, "github.com")
+	request := fmt.Sprintf("git-upload-pack /%s.git\x00host=%s\x00", repo, 
+		"github.com")
 
 	// Send the request using pkt-line encoding.
 	_, err = conn.Write([]byte(pktLineEncode(request)))
@@ -385,21 +388,21 @@ func main() {
 }
 ```
 
-This code connects to a Git server and sends a request to "upload-pack"
-(which is used for fetching). The request is formatted using the `pkt-line`
-protocol, which prefixes each line with its length in hexadecimal. The
-server responds with a list of references, also in `pkt-line` format. The
-client reads the response line by line, parsing the length prefix to
-determine how much to read. This example provides insight into how low-level
-network protocols can be implemented in Go.
+This code connects to a Git server and sends a request to "upload-pack"  
+(which is used for fetching). The request is formatted using the `pkt-line`  
+protocol, which prefixes each line with its length in hexadecimal. The  
+server responds with a list of references, also in `pkt-line` format. The  
+client reads the response line by line, parsing the length prefix to  
+determine how much to read. This example provides insight into how low-level  
+network protocols can be implemented in Go.  
 
 ---
 
 # SSH client (basic handshake)
 
-This example demonstrates how to create an SSH client that performs a basic
-handshake with a server. It uses the `golang.org/x/crypto/ssh` package to
-handle the complexities of the SSH protocol.
+This example demonstrates how to create an SSH client that performs a basic  
+handshake with a server. It uses the `golang.org/x/crypto/ssh` package to  
+handle the complexities of the SSH protocol.  
 
 ```go
 package main
@@ -459,12 +462,13 @@ func main() {
 }
 ```
 
-This code sets up an SSH client configuration with a username and password,
-and then connects to an SSH server. The `ssh.NewClientConn` function
-handles the handshake process, including version exchange, key exchange,
-and authentication. For simplicity, this example uses `ssh.InsecureIgnoreHostKey`
-to bypass host key verification, which is not recommended for production
-use. The server's version string is printed upon a successful connection.
+This code sets up an SSH client configuration with a username and password,  
+and then connects to an SSH server. The `ssh.NewClientConn` function  
+handles the handshake process, including version exchange, key exchange,  
+and authentication. For simplicity, this example uses  
+`ssh.InsecureIgnoreHostKey` to bypass host key verification, which is not  
+recommended for production use. The server's version string is printed upon  
+a successful connection.  
 
 ---
 
@@ -670,7 +674,9 @@ func main() {
 	}
 
 	dataChannel.OnOpen(func() {
-		log.Printf("Data channel '%s'-'%d' open. Random messages will be sent to any connected DataChannels every 5 seconds", dataChannel.Label(), dataChannel.ID())
+		log.Printf("Data channel '%s'-'%d' open. Random messages will be sent "+
+			"to any connected DataChannels every 5 seconds", 
+			dataChannel.Label(), dataChannel.ID())
 		for range time.NewTicker(5 * time.Second).C {
 			message := "Hello from client!"
 			log.Printf("Sending message: %s", message)
@@ -681,7 +687,8 @@ func main() {
 	})
 
 	dataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
-		log.Printf("Message from data channel '%s': '%s'", dataChannel.Label(), string(msg.Data))
+		log.Printf("Message from data channel '%s': '%s'", 
+			dataChannel.Label(), string(msg.Data))
 	})
 
 	// Create an offer.
@@ -698,7 +705,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to marshal offer: %v", err)
 	}
-	if err := c.WriteJSON(Message{Event: "offer", Data: string(offerData)}); err != nil {
+	if err := c.WriteJSON(Message{Event: "offer", 
+		Data: string(offerData)}); err != nil {
 		log.Fatalf("Failed to write offer: %v", err)
 	}
 
@@ -769,7 +777,8 @@ func main() {
 	// QUIC always uses TLS 1.3.
 	// We need to provide a list of ALPN protocols. For HTTP/3, this is "h3".
 	tlsConf := &tls.Config{
-		InsecureSkipVerify: true, // In a real application, you should verify the server's certificate.
+		InsecureSkipVerify: true, // In a real application, you should 
+		                         // verify the server's certificate.
 		NextProtos:         []string{"h3"},
 	}
 
@@ -938,18 +947,22 @@ func generateSelfSignedCert() (key, cert []byte, err error) {
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(time.Hour * 24 * 365),
 
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		KeyUsage:              x509.KeyUsageKeyEncipherment | 
+		                      x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 	}
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, 
+		&template, &priv.PublicKey, priv)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	certOut := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
-	keyOut := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
+	certOut := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", 
+		Bytes: derBytes})
+	keyOut := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", 
+		Bytes: x509.MarshalPKCS1PrivateKey(priv)})
 
 	return keyOut, certOut, nil
 }
