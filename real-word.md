@@ -474,10 +474,10 @@ a successful connection.
 
 # VPN tunnel over TCP
 
-This example demonstrates a simple VPN tunnel over TCP. It consists of a
-client and a server that create a virtual network interface (TUN) and
-forward packets between them over a TCP connection. This creates a basic
-point-to-point VPN.
+This example demonstrates a simple VPN tunnel over TCP. It consists of a  
+client and a server that create a virtual network interface (TUN) and  
+forward packets between them over a TCP connection. This creates a basic  
+point-to-point VPN.  
 
 ```go
 package main
@@ -608,22 +608,22 @@ func configureIP(ifaceName, ipCIDR string) error {
 }
 ```
 
-This code can be run in two modes: `server` and `client`. The server
-listens for a TCP connection, while the client connects to the server. Both
-create a TUN interface and assign it an IP address. Once the connection is
-established, `io.Copy` is used to forward data between the TUN interface
-and the TCP socket. This effectively creates a tunnel. Note that this
-example requires root privileges to create and configure the network
-interface and depends on the `ip` command-line tool.
+This code can be run in two modes: `server` and `client`. The server  
+listens for a TCP connection, while the client connects to the server. Both  
+create a TUN interface and assign it an IP address. Once the connection is  
+established, `io.Copy` is used to forward data between the TUN interface  
+and the TCP socket. This effectively creates a tunnel. Note that this  
+example requires root privileges to create and configure the network  
+interface and depends on the `ip` command-line tool.  
 
 ---
 
 # WebRTC signaling client
 
-This example demonstrates a WebRTC signaling client that connects to a
-WebSocket server to exchange session descriptions with a peer. It uses the
-`pion/webrtc` library for WebRTC and `gorilla/websocket` for the signaling
-channel.
+This example demonstrates a WebRTC signaling client that connects to a  
+WebSocket server to exchange session descriptions with a peer. It uses the  
+`pion/webrtc` library for WebRTC and `gorilla/websocket` for the signaling  
+channel.  
 
 ```go
 package main
@@ -740,21 +740,21 @@ func main() {
 }
 ```
 
-This code connects to a WebSocket server, creates a WebRTC peer connection,
-and then creates an offer. The offer is sent to the signaling server, which
-is expected to forward it to another peer. The client then waits for an
-answer from the other peer. Once the answer is received, the connection is
-established, and a data channel is opened for sending and receiving
-messages. This example illustrates the fundamental concepts of WebRTC
-signaling.
+This code connects to a WebSocket server, creates a WebRTC peer connection,  
+and then creates an offer. The offer is sent to the signaling server, which  
+is expected to forward it to another peer. The client then waits for an  
+answer from the other peer. Once the answer is received, the connection is  
+established, and a data channel is opened for sending and receiving  
+messages. This example illustrates the fundamental concepts of WebRTC  
+signaling.  
 
 ---
 
 # QUIC client (basic handshake)
 
-This example demonstrates a basic QUIC client that connects to a server and
-performs a handshake. It uses the `lucas-clemente/quic-go` library, a
-popular implementation of the QUIC protocol in Go.
+This example demonstrates a basic QUIC client that connects to a server and  
+performs a handshake. It uses the `lucas-clemente/quic-go` library, a  
+popular implementation of the QUIC protocol in Go.  
 
 ```go
 package main
@@ -808,20 +808,20 @@ func main() {
 }
 ```
 
-This code connects to a QUIC server using `quic.DialAddr`. It configures a
-`tls.Config` because QUIC is always encrypted with TLS 1.3. The `NextProtos`
-field is used for Application-Layer Protocol Negotiation (ALPN), which is
-how the client and server agree on the application protocol to use over
-QUIC (in this case, "h3" for HTTP/3). The example performs a handshake and
-opens a stream, demonstrating the basic setup for a QUIC connection.
+This code connects to a QUIC server using `quic.DialAddr`. It configures a  
+`tls.Config` because QUIC is always encrypted with TLS 1.3. The `NextProtos`  
+field is used for Application-Layer Protocol Negotiation (ALPN), which is  
+how the client and server agree on the application protocol to use over  
+QUIC (in this case, "h3" for HTTP/3). The example performs a handshake and  
+opens a stream, demonstrating the basic setup for a QUIC connection.  
 
 ---
 
 # DNS-over-HTTPS client
 
-This example demonstrates a DNS-over-HTTPS (DoH) client. It uses the
-`miekg/dns` library to construct and parse DNS messages, and the standard
-`net/http` package to send the query over an encrypted HTTPS connection.
+This example demonstrates a DNS-over-HTTPS (DoH) client. It uses the  
+`miekg/dns` library to construct and parse DNS messages, and the standard  
+`net/http` package to send the query over an encrypted HTTPS connection.  
 
 ```go
 package main
@@ -895,20 +895,20 @@ func main() {
 }
 ```
 
-This code first creates a DNS query message for an A record. The message is
-then packed into a binary format. This binary data is sent as the body of an
-HTTP POST request to a DoH server. The server's response, which is also a
-binary DNS message, is unpacked and the resulting IP addresses are printed.
-This example shows how to combine DNS and HTTP protocols to implement DoH.
+This code first creates a DNS query message for an A record. The message is  
+then packed into a binary format. This binary data is sent as the body of an  
+HTTP POST request to a DoH server. The server's response, which is also a  
+binary DNS message, is unpacked and the resulting IP addresses are printed.  
+This example shows how to combine DNS and HTTP protocols to implement DoH.  
 
 ---
 
 # TLS termination proxy
 
-This example demonstrates a TLS termination proxy. The proxy listens for
-encrypted TLS (HTTPS) connections, decrypts them, and forwards the plaintext
-traffic to a backend HTTP server. It generates a self-signed certificate
-on the fly for simplicity.
+This example demonstrates a TLS termination proxy. The proxy listens for  
+encrypted TLS (HTTPS) connections, decrypts them, and forwards the plaintext  
+traffic to a backend HTTP server. It generates a self-signed certificate  
+on the fly for simplicity.  
 
 ```go
 package main
@@ -1023,9 +1023,9 @@ func main() {
 }
 ```
 
-This code sets up a TLS listener on `localhost:8443`. When a client connects,
-the proxy accepts the connection, decrypts the TLS traffic, and then opens a
-new, unencrypted TCP connection to the backend server at `localhost:8080`.
-The `io.Copy` function is used to shuttle data between the client and the
-backend. This is a common pattern for securing services that do not have
-built-in TLS support.
+This code sets up a TLS listener on `localhost:8443`. When a client connects,  
+the proxy accepts the connection, decrypts the TLS traffic, and then opens a  
+new, unencrypted TCP connection to the backend server at `localhost:8080`.  
+The `io.Copy` function is used to shuttle data between the client and the  
+backend. This is a common pattern for securing services that do not have  
+built-in TLS support.  

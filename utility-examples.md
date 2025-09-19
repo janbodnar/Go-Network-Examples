@@ -2,8 +2,9 @@
 
 ## Visibility & Scanning
 
-This section covers tools for discovering network hosts, open ports, and services.
-These examples form the foundation of network mapping and security auditing.
+This section covers tools for discovering network hosts, open ports, and  
+services. These examples form the foundation of network mapping and security  
+auditing.  
 
 ### TCP connect scanner
 
@@ -59,11 +60,12 @@ func main() {
 }
 ```
 
-This Go program takes a host, a starting port, and an ending port as command-line
-arguments. It then scans the specified port range on the host. It uses goroutines
-for concurrency and a `sync.WaitGroup` to wait for all goroutines to finish.
-The `net.DialTimeout` function is used to attempt a connection with a timeout of
-one second. If a connection is successful, the port is reported as open.
+This Go program takes a host, a starting port, and an ending port as  
+command-line arguments. It then scans the specified port range on the host.  
+It uses goroutines for concurrency and a `sync.WaitGroup` to wait for all  
+goroutines to finish. The `net.DialTimeout` function is used to attempt a  
+connection with a timeout of one second. If a connection is successful, the  
+port is reported as open.  
 
 ### TCP SYN scanner
 
@@ -72,8 +74,9 @@ port is open, avoiding a full connection. It is stealthier than a connect scan.
 
 ```go
 // This program is a TCP SYN scanner. It sends a SYN packet to a range of ports
-// on a target host and waits for a SYN-ACK response to determine if a port is open.
-// This is a "half-open" scan because it does not complete the TCP three-way handshake.
+// on a target host and waits for a SYN-ACK response to determine if a port is 
+// open. This is a "half-open" scan because it does not complete the TCP 
+// three-way handshake.
 //
 // This program must be run as root.
 //
@@ -95,8 +98,8 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-// getLocalIP returns the local IP address that will be used to send packets to the
-// destination.
+// getLocalIP returns the local IP address that will be used to send packets 
+// to the destination.
 func getLocalIP(dstip net.IP) (net.IP, error) {
 	serverAddr, err := net.ResolveUDPAddr("udp", dstip.String()+":12345")
 	if err != nil {
@@ -120,7 +123,8 @@ type scanner struct {
 	wg        sync.WaitGroup
 }
 
-func newScanner(host string, startPort, endPort int, timeout time.Duration) *scanner {
+func newScanner(host string, startPort, endPort int, 
+		timeout time.Duration) *scanner {
 	return &scanner{
 		host:      host,
 		startPort: startPort,
@@ -164,7 +168,8 @@ func (s *scanner) run() {
 	close(s.results)
 }
 
-func (s *scanner) sendSYN(conn net.PacketConn, dstip net.IP, port layers.TCPPort) {
+func (s *scanner) sendSYN(conn net.PacketConn, dstip net.IP, 
+		port layers.TCPPort) {
 	defer s.wg.Done()
 
 	// Our IP header... not used, but necessary for TCP checksumming.
@@ -257,21 +262,23 @@ This program sends a raw TCP SYN packet to each port in a given range. It then
 listens for SYN-ACK responses to identify open ports. This technique is known as
 a "half-open" scan because it doesn't complete the TCP handshake.
 
-**Note:** This program requires root privileges to run and depends on the `gopacket`
-library. You can install it with `go get github.com/google/gopacket`.
+**Note:** This program requires root privileges to run and depends on the  
+`gopacket` library. You can install it with `go get github.com/google/gopacket`.  
 
 ### UDP port scanner
 
 A UDP port scanner sends a UDP packet to a target port. If an ICMP "port
-unreachable" error is returned, the port is closed. Otherwise, it is assumed open.
+unreachable" error is returned, the port is closed. Otherwise, it is assumed  
+open.  
 
 ```go
-// This program is a basic UDP port scanner. It sends a UDP packet to a range of ports
-// on a target host. If it doesn't receive an immediate "connection refused" error,
-// it considers the port to be open or filtered.
+// This program is a basic UDP port scanner. It sends a UDP packet to a range 
+// of ports on a target host. If it doesn't receive an immediate "connection 
+// refused" error, it considers the port to be open or filtered.
 //
-// Note: UDP scanning is inherently unreliable. A lack of response could mean the
-// port is open, or that the packet was lost, or that a firewall is dropping it.
+// Note: UDP scanning is inherently unreliable. A lack of response could mean 
+// the port is open, or that the packet was lost, or that a firewall is 
+// dropping it.
 // A more advanced scanner would listen for ICMP "port unreachable" messages to
 // definitively determine if a port is closed.
 package main
