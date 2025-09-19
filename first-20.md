@@ -6,7 +6,8 @@ Here are 20 essential Go networking code examples to help students get started. 
 
 ### 1. Simple TCP Echo Server
 
-This server listens on a TCP port and echoes back any data it receives from a client.
+This server listens on a TCP port and echoes back any data it receives from a  
+client.  
 
 ```go
 package main
@@ -41,11 +42,22 @@ func handleConnection(conn net.Conn) {
 }
 ```
 
+The `net.Listen("tcp", ":8080")` function creates a TCP listener on port 8080.  
+The empty host string means it will listen on all available interfaces  
+(0.0.0.0). The main loop continuously calls `listener.Accept()` to wait for  
+incoming connections. Each new connection is handled in a separate goroutine  
+using `go handleConnection(conn)`, enabling the server to handle multiple  
+clients concurrently. The `handleConnection` function uses `io.Copy(conn, conn)`  
+which reads data from the connection and immediately writes it back, creating  
+the echo behavior. The `defer conn.Close()` ensures the connection is properly  
+closed when the function exits.  
+
 ---
 
 ### 2. Simple TCP Client
 
-This client connects to the TCP server, sends a message, and prints the response.
+This client connects to the TCP server, sends a message, and prints the  
+response.  
 
 ```go
 package main
@@ -76,11 +88,21 @@ func main() {
 }
 ```
 
+The `net.Dial("tcp", "localhost:8080")` establishes a TCP connection to the  
+server running on localhost port 8080. This client creates an interactive  
+session where user input is sent to the server and responses are displayed.  
+Two `io.Copy` operations run concurrently: one goroutine copies data from the  
+server connection to stdout (displaying server responses), while the main  
+thread copies data from stdin to the server connection (sending user input).  
+This bidirectional communication continues until the user types 'exit' or  
+an error occurs. The `defer conn.Close()` ensures the connection is properly  
+closed when the function exits.  
+
 ---
 
 ### 3. Simple UDP Echo Server
 
-A UDP server that listens for packets and echoes them back to the sender.
+A UDP server that listens for packets and echoes them back to the sender.  
 
 ```go
 package main
@@ -119,11 +141,21 @@ func main() {
 }
 ```
 
+UDP is a connectionless protocol, unlike TCP which maintains persistent  
+connections. The `net.ResolveUDPAddr("udp", ":8080")` resolves the UDP  
+address, and `net.ListenUDP()` creates a UDP socket bound to port 8080.  
+The server uses `ReadFromUDP()` to receive packets, which returns the  
+received data, the number of bytes read, and the sender's address.  
+`WriteToUDP()` sends the echo response back to the original sender using  
+their address. The 1024-byte buffer limits the maximum packet size that  
+can be processed. Error handling allows the server to continue running  
+even if individual packet operations fail.  
+
 ---
 
 ### 4. Simple UDP Client
 
-A UDP client that sends a message to the UDP server and waits for the echo.
+A UDP client that sends a message to the UDP server and waits for the echo.  
 
 ```go
 package main
@@ -166,11 +198,22 @@ func main() {
 }
 ```
 
+The UDP client uses `net.ResolveUDPAddr()` to resolve the server's address  
+and `net.DialUDP()` to create a UDP connection. The second parameter `nil`  
+means the operating system will choose a local address automatically.  
+`bufio.NewReader(os.Stdin)` creates a buffered reader for user input, and  
+`ReadString('\n')` reads until a newline character. The client sends the  
+message using `conn.Write()` and then waits for the echo response with  
+`ReadFromUDP()`. Unlike TCP, UDP doesn't guarantee delivery or ordering,  
+making it faster but less reliable. The client assumes the server will  
+respond, but in real applications, you might want to implement timeouts  
+or retry logic.  
+
 ---
 
 ### 5. Basic HTTP Server
 
-A simple HTTP server that responds with "Hello, World!".
+A simple HTTP server that responds with "Hello, World!".  
 
 ```go
 package main
@@ -194,11 +237,21 @@ func main() {
 }
 ```
 
+Go's `net/http` package provides a complete HTTP server implementation.  
+`http.HandleFunc("/", helloHandler)` registers the `helloHandler` function  
+to handle requests to the root path ("/"). The handler function receives  
+two parameters: `http.ResponseWriter` for writing the response, and  
+`*http.Request` containing request details. `fmt.Fprintf(w, "Hello, World!")`  
+writes the response body to the client. `http.ListenAndServe(":8080", nil)`  
+starts the server on port 8080, with `nil` meaning it uses the default  
+ServeMux (request multiplexer). The server automatically handles HTTP  
+protocol details like headers, status codes, and connection management.  
+
 ---
 
 ### 6. HTTP Client (GET Request)
 
-Makes a GET request to a public API and prints the response body.
+Makes a GET request to a public API and prints the response body.  
 
 ```go
 package main
@@ -225,11 +278,21 @@ func main() {
 }
 ```
 
+The `http.Get()` function is a convenience method that creates and sends  
+an HTTP GET request to the specified URL. It returns an `*http.Response`  
+and an error. The response contains headers, status code, and body.  
+`defer resp.Body.Close()` ensures the response body is closed after use,  
+preventing resource leaks. `io.ReadAll(resp.Body)` reads the entire  
+response body into memory as a byte slice. The example uses  
+jsonplaceholder.typicode.com, a free REST API for testing. In production  
+code, you should check the status code (`resp.StatusCode`) and handle  
+different HTTP status codes appropriately.  
+
 ---
 
 ### 7. HTTP Client (POST Request)
 
-Makes a POST request with a JSON payload.
+Makes a POST request with a JSON payload.  
 
 ```go
 package main
@@ -264,11 +327,21 @@ func main() {
 }
 ```
 
+This example demonstrates sending structured data to a server via POST  
+request. The `map[string]string` contains the data to send, which is  
+converted to JSON format using `json.Marshal()`. `bytes.NewBuffer()` creates  
+an `io.Reader` from the JSON bytes. `http.Post()` takes three parameters:  
+the URL, content type ("application/json"), and the request body reader.  
+The server needs the correct Content-Type header to parse the JSON properly.  
+Many REST APIs expect JSON data for create/update operations. The response  
+typically contains the created resource with any server-assigned fields  
+like IDs or timestamps.  
+
 ---
 
 ### 8. Parsing a URL
 
-Demonstrates how to parse a URL string into its components.
+Demonstrates how to parse a URL string into its components.  
 
 ```go
 package main
@@ -294,11 +367,21 @@ func main() {
 }
 ```
 
+The `net/url` package provides comprehensive URL parsing capabilities.  
+`url.Parse()` breaks down a URL string into its constituent parts and  
+returns a `*url.URL` struct. The scheme indicates the protocol (http, https,  
+ftp, etc.). Host includes both hostname and port. Path is the resource  
+location on the server. RawQuery contains the query string parameters  
+after the "?" character. Fragment is the part after "#" used for  
+client-side navigation. The parser handles URL encoding/decoding and  
+validation automatically. You can also use `parsedURL.Query()` to get  
+a parsed map of query parameters for easier access.  
+
 ---
 
 ### 9. DNS Lookup
 
-Resolves a domain name to its IP addresses.
+Resolves a domain name to its IP addresses.  
 
 ```go
 package main
@@ -322,11 +405,22 @@ func main() {
 }
 ```
 
+DNS (Domain Name System) translates human-readable domain names into  
+IP addresses that computers use for communication. `net.LookupIP()` performs  
+a DNS query and returns all IP addresses associated with the domain.  
+The function returns both IPv4 and IPv6 addresses if available. The  
+output format "IN A" mimics DNS record notation, where "IN" means  
+"Internet" and "A" indicates an address record. Each IP address is  
+represented as a `net.IP` type, and `ip.String()` converts it to a  
+readable string format. This lookup uses the system's configured DNS  
+servers, typically specified in /etc/resolv.conf on Unix systems.  
+
 ---
 
 ### 10. Concurrent TCP Server
 
-A TCP server that handles multiple client connections concurrently using goroutines.
+A TCP server that handles multiple client connections concurrently using  
+goroutines.  
 
 ```go
 package main
@@ -364,11 +458,22 @@ func handleClient(conn net.Conn) {
 }
 ```
 
+This server demonstrates Go's excellent concurrency support for network  
+programming. Unlike the basic echo server, this version explicitly shows  
+that each client connection is handled in a separate goroutine using  
+`go handleClient(conn)`. Goroutines are lightweight threads managed by  
+the Go runtime, allowing thousands of concurrent connections with minimal  
+memory overhead. `conn.RemoteAddr().String()` shows the client's IP address  
+and port. The server continues accepting new connections even if some  
+clients disconnect or encounter errors, thanks to the `continue` statement  
+in the error handling. This pattern is fundamental for building scalable  
+network servers in Go.  
+
 ---
 
 ### 11. TCP Client with Timeout
 
-Sets a read/write deadline on a TCP connection.
+Sets a read/write deadline on a TCP connection.  
 
 ```go
 package main
@@ -405,11 +510,23 @@ func main() {
 }
 ```
 
+Network operations can hang indefinitely if the remote server becomes  
+unresponsive. Timeouts are essential for building robust network applications.  
+`SetWriteDeadline()` and `SetReadDeadline()` set absolute time limits for  
+write and read operations respectively. `time.Now().Add(5 * time.Second)`  
+creates a deadline 5 seconds from now. If the operation doesn't complete  
+by the deadline, it returns a timeout error. This example sends a raw  
+HTTP GET request to demonstrate timeouts. The `\r\n` sequences are HTTP  
+line endings, and the empty line after headers signals the end of the  
+HTTP request. Production code should handle timeout errors specifically  
+to distinguish them from other network errors.  
+
 ---
 
 ### 12. Graceful HTTP Server Shutdown
 
-Shows how to shut down an HTTP server gracefully, allowing active connections to finish.
+Shows how to shut down an HTTP server gracefully, allowing active  
+connections to finish.  
 
 ```go
 package main
@@ -457,11 +574,23 @@ func main() {
 }
 ```
 
+Graceful shutdown is crucial for production servers to avoid dropping  
+active requests when stopping or restarting. The server runs in a  
+goroutine, allowing the main thread to wait for shutdown signals.  
+`signal.Notify()` listens for SIGINT (Ctrl+C) and SIGTERM signals.  
+`<-quit` blocks until a signal is received. `server.Shutdown()` stops  
+accepting new connections and waits for active requests to complete.  
+The context with timeout ensures shutdown doesn't wait indefinitely.  
+The 2-second sleep in the handler simulates long-running requests to  
+demonstrate graceful handling. `http.ErrServerClosed` is expected when  
+the server shuts down normally. This pattern prevents data loss and  
+ensures a clean shutdown process.  
+
 ---
 
 ### 13. Simple WebSocket Server
 
-A basic WebSocket server that echoes messages back to the client.
+A basic WebSocket server that echoes messages back to the client.  
 
 ```go
 package main
@@ -507,11 +636,22 @@ func main() {
 ```
 *Note: This example requires the `gorilla/websocket` package: `go get github.com/gorilla/websocket`*
 
+WebSockets provide full-duplex communication between client and server  
+over a single TCP connection. The `websocket.Upgrader` converts a regular  
+HTTP connection to a WebSocket connection through the WebSocket handshake.  
+`ReadBufferSize` and `WriteBufferSize` control the I/O buffer sizes.  
+`upgrader.Upgrade()` performs the protocol upgrade from HTTP to WebSocket.  
+`ReadMessage()` blocks until a complete message is received, returning  
+the message type (text, binary, close, etc.) and payload. `WriteMessage()`  
+sends a message back to the client with the same type. The infinite loop  
+keeps the connection alive for bidirectional messaging. WebSockets are  
+ideal for real-time applications like chat, live updates, or gaming.  
+
 ---
 
 ### 14. Simple WebSocket Client
 
-A client to connect to the WebSocket echo server.
+A client to connect to the WebSocket echo server.  
 
 ```go
 package main
@@ -584,11 +724,23 @@ func main() {
 }
 ```
 
+This WebSocket client demonstrates proper connection lifecycle management.  
+`url.URL` constructs the WebSocket URL with "ws" scheme (or "wss" for  
+secure connections). `websocket.DefaultDialer.Dial()` establishes the  
+WebSocket connection. The client uses two concurrent operations: a  
+goroutine reads incoming messages continuously, while the main loop  
+handles sending messages and interrupt signals. `time.NewTicker(time.Second)`  
+sends a message every second with the current timestamp. The `select`  
+statement multiplexes between three channels: completion, timer, and  
+interrupt. Proper cleanup sends a close message before terminating the  
+connection. This pattern ensures graceful disconnection and demonstrates  
+real-time bidirectional communication.  
+
 ---
 
 ### 15. File Transfer Server (TCP)
 
-A server that sends a file to a connecting client.
+A server that sends a file to a connecting client.  
 
 ```go
 package main
@@ -634,11 +786,23 @@ func sendFile(conn net.Conn) {
 }
 ```
 
+This server implements a simple file transfer protocol over TCP. When a  
+client connects, the server immediately starts sending the contents of  
+"send.txt". `os.Open()` opens the file for reading, returning a file  
+descriptor that implements `io.Reader`. `io.Copy(conn, file)` efficiently  
+streams the file data directly to the network connection without loading  
+the entire file into memory. This is crucial for large files as it uses  
+constant memory regardless of file size. Each client connection is handled  
+in a separate goroutine, allowing multiple concurrent file transfers.  
+The server assumes the file exists; production code should handle missing  
+files gracefully. The TCP connection is closed after the transfer,  
+signaling completion to the client.  
+
 ---
 
 ### 16. File Transfer Client (TCP)
 
-A client that receives a file from the server.
+A client that receives a file from the server.  
 
 ```go
 package main
@@ -671,11 +835,23 @@ func main() {
 }
 ```
 
+This client complements the file transfer server by receiving and saving  
+the transmitted file. `net.Dial("tcp", "localhost:8080")` connects to the  
+server. `os.Create("received.txt")` creates a new file (or truncates an  
+existing one) for writing. `io.Copy(file, conn)` reads all data from the  
+network connection and writes it to the file until the connection is  
+closed by the server. This streaming approach handles files of any size  
+efficiently. The client knows the transfer is complete when the server  
+closes the connection (resulting in `io.EOF`). In real applications,  
+you might want to implement a protocol that includes file metadata like  
+filename, size, or checksums for verification. Error handling ensures  
+resources are cleaned up properly.  
+
 ---
 
 ### 17. UDP Broadcast
 
-A server that broadcasts a message to all devices on the local network.
+A server that broadcasts a message to all devices on the local network.  
 
 ```go
 package main
@@ -693,7 +869,7 @@ func main() {
 	}
 	defer conn.Close()
 
-_	for {
+	for {
 		message := "Hello, network!"
 		conn.Write([]byte(message))
 		log.Println("Broadcasted message:", message)
@@ -702,11 +878,23 @@ _	for {
 }
 ```
 
+UDP broadcast sends packets to all devices on a network segment  
+simultaneously. The special IP address "255.255.255.255" is the limited  
+broadcast address that reaches all hosts on the local network. This is  
+different from unicast (one-to-one) or multicast (one-to-many with  
+subscription). The `net.Dial()` creates a UDP connection to the broadcast  
+address. Each `conn.Write()` sends the message to all listening devices  
+on port 8080. Broadcasts are useful for service discovery, network  
+announcements, or games finding local players. Note that many routers  
+block broadcast traffic from crossing network boundaries for security  
+and performance reasons. The 2-second interval prevents flooding the  
+network with messages.  
+
 ---
 
 ### 18. Basic TCP Port Scanner
 
-A simple tool to check if specific ports are open on a host.
+A simple tool to check if specific ports are open on a host.  
 
 ```go
 package main
@@ -739,11 +927,24 @@ func main() {
 }
 ```
 
+This port scanner checks which TCP ports are accepting connections on a  
+target host. Port scanning is a fundamental network reconnaissance  
+technique used for security auditing and service discovery. The scanner  
+uses goroutines to test multiple ports concurrently, making it much  
+faster than sequential scanning. `sync.WaitGroup` ensures the main  
+function waits for all scanning goroutines to complete. Each goroutine  
+attempts to establish a TCP connection to a port; success indicates the  
+port is open and a service is listening. Failed connections typically  
+mean the port is closed or filtered by a firewall. The scanner tests  
+ports 1-1024, which include most well-known services. Real port scanners  
+implement more sophisticated techniques like SYN scanning, timeout  
+handling, and rate limiting.  
+
 ---
 
 ### 19. HTTP Server with Routing
 
-An HTTP server that uses `http.ServeMux` to handle different URL paths.
+An HTTP server that uses `http.ServeMux` to handle different URL paths.  
 
 ```go
 package main
@@ -774,11 +975,23 @@ func main() {
 }
 ```
 
+HTTP routing directs requests to appropriate handlers based on URL paths.  
+`http.NewServeMux()` creates a request multiplexer (router) that matches  
+incoming requests to registered patterns. Each `mux.HandleFunc()` call  
+registers a handler function for a specific path. The "/" pattern matches  
+the root path, "/about" matches exactly that path, and so on. When a  
+request arrives, the ServeMux finds the best matching pattern and calls  
+the corresponding handler. Anonymous functions (closures) are used here  
+for simplicity, but you could use named functions or methods. The ServeMux  
+is passed to `http.ListenAndServe()` instead of `nil`, giving you control  
+over routing. This pattern forms the foundation of web applications and  
+REST APIs in Go.  
+
 ---
 
 ### 20. Using context.Context in an HTTP Server
 
-Demonstrates how to use `context` to handle request cancellation.
+Demonstrates how to use `context` to handle request cancellation.  
 
 ```go
 package main
@@ -813,3 +1026,15 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 ```
+
+The `context` package enables request cancellation and timeout handling  
+in Go servers. Every HTTP request carries a context via `r.Context()`,  
+which is cancelled when the client disconnects or times out. The `select`  
+statement waits for either the work to complete (`time.After(5 * time.Second)`)  
+or the context to be cancelled (`ctx.Done()`). If a client closes their  
+browser or network connection before the 5-second operation completes,  
+`ctx.Done()` receives a signal and the handler can clean up resources  
+immediately. This prevents servers from continuing expensive operations  
+for clients that are no longer waiting. The context pattern is essential  
+for building responsive servers that handle client disconnections gracefully  
+and avoid resource waste on abandoned requests.  
