@@ -10,7 +10,10 @@ of the internet. It's a set of communication protocols that specify how data
 should be packetized, addressed, transmitted, routed, and received. For a Go  
 developer, the most important protocols in this suite are TCP and UDP.  
 
-*   **IP (Internet Protocol):** This is the principal communications protocol for relaying datagrams across network boundaries. Its primary function is to deliver packets of information from a source host to a destination host based on their IP addresses.
+*   **IP (Internet Protocol):** This is the principal communications  
+    protocol for relaying datagrams across network boundaries. Its primary  
+    function is to deliver packets of information from a source host to a  
+    destination host based on their IP addresses.  
 
 *   **TCP (Transmission Control Protocol):** TCP provides reliable, ordered,  
 and error-checked delivery of a stream of bytes between applications running  
@@ -28,7 +31,10 @@ reliability, such as video streaming, online gaming, or DNS lookups.
 
 ## The OSI Model Simplified
 
-The Open Systems Interconnection (OSI) model is a conceptual framework that standardizes the functions of a telecommunication or computing system into seven abstract layers. While you don't need to know every detail of it, understanding the layers helps in debugging network issues.
+The Open Systems Interconnection (OSI) model is a conceptual framework  
+that standardizes the functions of a telecommunication or computing system  
+into seven abstract layers. While you don't need to know every detail of it,  
+understanding the layers helps in debugging network issues.  
 
 For a Go network programmer, the most relevant layers are:
 
@@ -49,7 +55,11 @@ When you write a Go program that listens on a TCP port, you are operating at the
     *   Ports 1024-49151 are "registered" ports.
     *   Ports 49152-65535 are "dynamic" or "private" ports.
 
-*   **Socket:** A socket is the combination of an IP address and a port number (e.g., `192.168.1.1:8080`). It uniquely identifies a single network connection. In Go, when you listen for connections or connect to a server, you are working with sockets. The `net.Dial` and `net.Listen` functions in Go handle the low-level socket operations for you.
+*   **Socket:** A socket is the combination of an IP address and a port  
+    number (e.g., `192.168.1.1:8080`). It uniquely identifies a single  
+    network connection. In Go, when you listen for connections or connect to  
+    a server, you are working with sockets. The `net.Dial` and `net.Listen`  
+    functions in Go handle the low-level socket operations for you.  
 
 ## Domain Name System (DNS)
 
