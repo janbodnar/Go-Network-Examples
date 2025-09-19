@@ -213,7 +213,7 @@ or retry logic.
 
 ### 5. Basic HTTP Server
 
-A simple HTTP server that responds with "Hello, World!".
+A simple HTTP server that responds with "Hello, World!".  
 
 ```go
 package main
@@ -237,11 +237,21 @@ func main() {
 }
 ```
 
+Go's `net/http` package provides a complete HTTP server implementation.  
+`http.HandleFunc("/", helloHandler)` registers the `helloHandler` function  
+to handle requests to the root path ("/"). The handler function receives  
+two parameters: `http.ResponseWriter` for writing the response, and  
+`*http.Request` containing request details. `fmt.Fprintf(w, "Hello, World!")`  
+writes the response body to the client. `http.ListenAndServe(":8080", nil)`  
+starts the server on port 8080, with `nil` meaning it uses the default  
+ServeMux (request multiplexer). The server automatically handles HTTP  
+protocol details like headers, status codes, and connection management.  
+
 ---
 
 ### 6. HTTP Client (GET Request)
 
-Makes a GET request to a public API and prints the response body.
+Makes a GET request to a public API and prints the response body.  
 
 ```go
 package main
@@ -268,11 +278,21 @@ func main() {
 }
 ```
 
+The `http.Get()` function is a convenience method that creates and sends  
+an HTTP GET request to the specified URL. It returns an `*http.Response`  
+and an error. The response contains headers, status code, and body.  
+`defer resp.Body.Close()` ensures the response body is closed after use,  
+preventing resource leaks. `io.ReadAll(resp.Body)` reads the entire  
+response body into memory as a byte slice. The example uses  
+jsonplaceholder.typicode.com, a free REST API for testing. In production  
+code, you should check the status code (`resp.StatusCode`) and handle  
+different HTTP status codes appropriately.  
+
 ---
 
 ### 7. HTTP Client (POST Request)
 
-Makes a POST request with a JSON payload.
+Makes a POST request with a JSON payload.  
 
 ```go
 package main
@@ -307,11 +327,21 @@ func main() {
 }
 ```
 
+This example demonstrates sending structured data to a server via POST  
+request. The `map[string]string` contains the data to send, which is  
+converted to JSON format using `json.Marshal()`. `bytes.NewBuffer()` creates  
+an `io.Reader` from the JSON bytes. `http.Post()` takes three parameters:  
+the URL, content type ("application/json"), and the request body reader.  
+The server needs the correct Content-Type header to parse the JSON properly.  
+Many REST APIs expect JSON data for create/update operations. The response  
+typically contains the created resource with any server-assigned fields  
+like IDs or timestamps.  
+
 ---
 
 ### 8. Parsing a URL
 
-Demonstrates how to parse a URL string into its components.
+Demonstrates how to parse a URL string into its components.  
 
 ```go
 package main
@@ -337,11 +367,21 @@ func main() {
 }
 ```
 
+The `net/url` package provides comprehensive URL parsing capabilities.  
+`url.Parse()` breaks down a URL string into its constituent parts and  
+returns a `*url.URL` struct. The scheme indicates the protocol (http, https,  
+ftp, etc.). Host includes both hostname and port. Path is the resource  
+location on the server. RawQuery contains the query string parameters  
+after the "?" character. Fragment is the part after "#" used for  
+client-side navigation. The parser handles URL encoding/decoding and  
+validation automatically. You can also use `parsedURL.Query()` to get  
+a parsed map of query parameters for easier access.  
+
 ---
 
 ### 9. DNS Lookup
 
-Resolves a domain name to its IP addresses.
+Resolves a domain name to its IP addresses.  
 
 ```go
 package main
@@ -365,11 +405,22 @@ func main() {
 }
 ```
 
+DNS (Domain Name System) translates human-readable domain names into  
+IP addresses that computers use for communication. `net.LookupIP()` performs  
+a DNS query and returns all IP addresses associated with the domain.  
+The function returns both IPv4 and IPv6 addresses if available. The  
+output format "IN A" mimics DNS record notation, where "IN" means  
+"Internet" and "A" indicates an address record. Each IP address is  
+represented as a `net.IP` type, and `ip.String()` converts it to a  
+readable string format. This lookup uses the system's configured DNS  
+servers, typically specified in /etc/resolv.conf on Unix systems.  
+
 ---
 
 ### 10. Concurrent TCP Server
 
-A TCP server that handles multiple client connections concurrently using goroutines.
+A TCP server that handles multiple client connections concurrently using  
+goroutines.  
 
 ```go
 package main
@@ -406,6 +457,17 @@ func handleClient(conn net.Conn) {
 	}
 }
 ```
+
+This server demonstrates Go's excellent concurrency support for network  
+programming. Unlike the basic echo server, this version explicitly shows  
+that each client connection is handled in a separate goroutine using  
+`go handleClient(conn)`. Goroutines are lightweight threads managed by  
+the Go runtime, allowing thousands of concurrent connections with minimal  
+memory overhead. `conn.RemoteAddr().String()` shows the client's IP address  
+and port. The server continues accepting new connections even if some  
+clients disconnect or encounter errors, thanks to the `continue` statement  
+in the error handling. This pattern is fundamental for building scalable  
+network servers in Go.  
 
 ---
 
