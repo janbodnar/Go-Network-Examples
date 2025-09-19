@@ -1,6 +1,8 @@
 # Top 20 Go Networking Examples for Beginners
 
-Here are 20 essential Go networking code examples to help students get started. Each example is self-contained and demonstrates a core networking concept in Go.
+Here are 20 essential Go networking code examples to help students get  
+started. Each example is self-contained and demonstrates a core networking  
+concept in Go.  
 
 ---
 
@@ -47,7 +49,8 @@ The empty host string means it will listen on all available interfaces
 (0.0.0.0). The main loop continuously calls `listener.Accept()` to wait for  
 incoming connections. Each new connection is handled in a separate goroutine  
 using `go handleConnection(conn)`, enabling the server to handle multiple  
-clients concurrently. The `handleConnection` function uses `io.Copy(conn, conn)`  
+clients concurrently. The `handleConnection` function uses  
+`io.Copy(conn, conn)`  
 which reads data from the connection and immediately writes it back, creating  
 the echo behavior. The `defer conn.Close()` ensures the connection is properly  
 closed when the function exits.  
@@ -131,7 +134,9 @@ func main() {
 			log.Println("Error reading from UDP:", err)
 			continue
 		}
-		log.Printf("Received %d bytes from %s: %s\n", n, remoteAddr, string(buffer[:n]))
+		log.Printf("Received %d bytes from %s: %s
+", n, remoteAddr,
+			string(buffer[:n]))
 
 		_, err = conn.WriteToUDP(buffer[:n], remoteAddr)
 		if err != nil {
@@ -313,7 +318,8 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	resp, err := http.Post("https://jsonplaceholder.typicode.com/posts", "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post("https://jsonplaceholder.typicode.com/posts",
+		"application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -353,7 +359,8 @@ import (
 )
 
 func main() {
-	rawURL := "https://example.com:8080/path/to/resource?key1=value1&key2=value2#fragment"
+	rawURL := "https://example.com:8080/path/to/resource?" +
+		"key1=value1&key2=value2#fragment"
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		log.Fatalln(err)
@@ -634,7 +641,8 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 ```
-*Note: This example requires the `gorilla/websocket` package: `go get github.com/gorilla/websocket`*
+*Note: This example requires the `gorilla/websocket` package:  
+`go get github.com/gorilla/websocket`*
 
 WebSockets provide full-duplex communication between client and server  
 over a single TCP connection. The `websocket.Upgrader` converts a regular  
@@ -709,7 +717,8 @@ func main() {
 		case <-interrupt:
 			log.Println("interrupt")
 			// Cleanly close the connection by sending a close message
-			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			err := c.WriteMessage(websocket.CloseMessage,
+				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
 				log.Println("write close:", err)
 				return
@@ -1030,7 +1039,8 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 The `context` package enables request cancellation and timeout handling  
 in Go servers. Every HTTP request carries a context via `r.Context()`,  
 which is cancelled when the client disconnects or times out. The `select`  
-statement waits for either the work to complete (`time.After(5 * time.Second)`)  
+statement waits for either the work to complete  
+(`time.After(5 * time.Second)`)  
 or the context to be cancelled (`ctx.Done()`). If a client closes their  
 browser or network connection before the 5-second operation completes,  
 `ctx.Done()` receives a signal and the handler can clean up resources  

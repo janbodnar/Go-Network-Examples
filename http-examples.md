@@ -148,7 +148,8 @@ func main() {
 		panic(err)
 	}
 
-	resp, err := http.Post("https://httpbin.org/post", "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post("https://httpbin.org/post", "application/json",
+		bytes.NewBuffer(jsonData))
 	if err != nil {
 		panic(err)
 	}
@@ -225,7 +226,8 @@ import (
 )
 
 func main() {
-	resp, err := http.Get("https://httpbin.org/response-headers?Content-Type=text/plain&Server=Jules-Server")
+	resp, err := http.Get("https://httpbin.org/response-headers?" +
+		"Content-Type=text/plain&Server=Jules-Server")
 	if err != nil {
 		panic(err)
 	}
@@ -448,7 +450,8 @@ func main() {
 
 	// Create a custom transport
 	tr := &http.Transport{
-		// We can't add the self-signed cert to a new CertPool, because we don't have it.
+		// We can't add the self-signed cert to a new CertPool, because we
+		// don't have it.
 		// A common, but insecure, way to handle this is to skip verification.
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -633,7 +636,8 @@ func main() {
 
 We use `json.NewDecoder` to decode the JSON from the request body directly
 into a Go struct. This is an efficient way to handle JSON input. You can
-test this with `curl -X POST -d '{"name":"Jules","email":"jules@example.com"}' http://localhost:8080/user`.
+test this with `curl -X POST -d '{"name":"Jules","email":"jules@example.com"}' \
+  http://localhost:8080/user`.
 
 ---
 
@@ -786,7 +790,8 @@ func main() {
 
 The `authMiddleware` checks for a valid token. If the token is missing or
 invalid, it returns an `Unauthorized` error and stops processing. Otherwise,
-it calls the next handler in the chain. Test with `curl -H "Authorization: Bearer my-secret-token" http://localhost:8080/protected`.
+it calls the next handler in the chain. Test with \
+`curl -H "Authorization: Bearer my-secret-token" http://localhost:8080/protected`.
 
 ---
 
@@ -929,7 +934,8 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://httpbin.org/delay/5", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET",
+		"https://httpbin.org/delay/5", nil)
 	if err != nil {
 		panic(err)
 	}
@@ -1185,7 +1191,8 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
     log.Println("Starting proxy server on :8080")
-    if err := http.ListenAndServe(":8080", http.HandlerFunc(proxyHandler)); err != nil {
+    if err := http.ListenAndServe(":8080",
+		http.HandlerFunc(proxyHandler)); err != nil {
         log.Fatal(err)
     }
 }
@@ -1193,7 +1200,8 @@ func main() {
 
 This proxy is a simple handler that creates a new request based on the incoming
 one and sends it using the default transport. It then copies the response back
-to the original client. Test it with `curl -x http://localhost:8080 http://example.com`.
+to the original client. Test it with \
+`curl -x http://localhost:8080 http://example.com`.
 
 ---
 
@@ -1277,6 +1285,7 @@ func main() {
 }
 ```
 
-To run this, you first need to fetch the package: `go get github.com/gorilla/websocket`.
+To run this, you first need to fetch the package: \
+`go get github.com/gorilla/websocket`.
 The server upgrades an HTTP connection to a WebSocket connection and then enters
 a loop to read messages and echo them back to the client.

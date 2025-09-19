@@ -316,10 +316,12 @@ func main() {
 		go func(p int) {
 			defer wg.Done()
 			address := fmt.Sprintf("%s:%d", host, p)
-			// We use DialTimeout to avoid waiting forever on a port that doesn't respond.
+			// We use DialTimeout to avoid waiting forever on a port that doesn't
+			// respond.
 			conn, err := net.DialTimeout("udp", address, 1*time.Second)
 			if err != nil {
-				// On some systems, a "connection refused" error will be returned for a closed UDP port.
+				// On some systems, a "connection refused" error will be returned for a
+				// closed UDP port.
 				// However, this is not guaranteed.
 				return
 			}
@@ -444,7 +446,9 @@ func main() {
 	case ipv4.ICMPTypeEchoReply:
 		fmt.Printf("received echo reply from %s in %v\n", peer, duration)
 	default:
-		fmt.Printf("received unexpected ICMP message type: %v from %s\n", replyMsg.Type, peer)
+		fmt.Printf("received unexpected ICMP message type: %v from %s
+",
+			replyMsg.Type, peer)
 	}
 }
 ```
@@ -460,7 +464,8 @@ parse the ICMP messages.
 
 ### ICMP traceroute
 
-An ICMP traceroute sends ICMP echo requests with increasing TTL values to map the
+An ICMP traceroute sends ICMP echo requests with increasing TTL values to
+map the
 path to a destination host, identifying routers along the way.
 
 ```go
@@ -511,7 +516,8 @@ func main() {
 	defer c.Close()
 
 	p := ipv4.NewPacketConn(c)
-	if err := p.SetControlMessage(ipv4.FlagTTL|ipv4.FlagSrc|ipv4.FlagDst|ipv4.FlagInterface, true); err != nil {
+	if err := p.SetControlMessage(ipv4.FlagTTL|ipv4.FlagSrc|ipv4.FlagDst|
+		ipv4.FlagInterface, true); err != nil {
 		fmt.Printf("error setting control message: %v\n", err)
 		os.Exit(1)
 	}
@@ -724,7 +730,9 @@ location, such as country, city, and ISP.
 
 ### TCP traceroute
 
-This tool performs a traceroute to a destination host and port by sending TCP SYN packets with increasing TTL values. It listens for ICMP "Time Exceeded" messages from routers along the path to discover the route.
+This tool performs a traceroute to a destination host and port by sending  
+TCP SYN packets with increasing TTL values. It listens for ICMP "Time  
+Exceeded" messages from routers along the path to discover the route.  
 
 ```go
 package main
@@ -816,7 +824,8 @@ func main() {
 			continue
 		}
 
-		packet := gopacket.NewPacket(reply[:n], layers.LayerTypeIPv4, gopacket.Default)
+		packet := gopacket.NewPacket(reply[:n], layers.LayerTypeIPv4,
+			gopacket.Default)
 		if icmpLayer := packet.Layer(layers.LayerTypeICMPv4); icmpLayer != nil {
 			icmp, _ := icmpLayer.(*layers.ICMPv4)
 			if icmp.TypeCode.Type() == layers.ICMPv4TypeTimeExceeded {
@@ -850,14 +859,17 @@ func getOurIP() net.IP {
 }
 ```
 
-Note that this tool requires the `github.com/google/gopacket` and `golang.org/x/net/ipv4` packages and must be run with root privileges to create raw sockets.
+Note that this tool requires the `github.com/google/gopacket` and  
+`golang.org/x/net/ipv4` packages and must be run with root privileges to  
+create raw sockets.  
 
 ---
 
 ## Latency & Performance
 
-This section focuses on tools for measuring network performance, including latency,
-jitter, and throughput. These are critical for diagnosing bottlenecks.
+This section focuses on tools for measuring network performance, including  
+latency, jitter, and throughput. These are critical for diagnosing  
+bottlenecks.  
 
 ### HTTP latency tester
 

@@ -1,16 +1,30 @@
 # Introduction to Networking for Go Programmers
 
-This document provides a concise introduction to computer networking concepts that are essential for writing network applications in Go.
+This document provides a concise introduction to computer networking concepts  
+that are essential for writing network applications in Go.  
 
 ## The Internet Protocol (IP) Suite (TCP/IP)
 
-The Internet Protocol Suite, commonly known as TCP/IP, is the foundation of the internet. It's a set of communication protocols that specify how data should be packetized, addressed, transmitted, routed, and received. For a Go developer, the most important protocols in this suite are TCP and UDP.
+The Internet Protocol Suite, commonly known as TCP/IP, is the foundation  
+of the internet. It's a set of communication protocols that specify how data  
+should be packetized, addressed, transmitted, routed, and received. For a Go  
+developer, the most important protocols in this suite are TCP and UDP.  
 
 *   **IP (Internet Protocol):** This is the principal communications protocol for relaying datagrams across network boundaries. Its primary function is to deliver packets of information from a source host to a destination host based on their IP addresses.
 
-*   **TCP (Transmission Control Protocol):** TCP provides reliable, ordered, and error-checked delivery of a stream of bytes between applications running on hosts communicating via an IP network. When you need to ensure that all data arrives in the correct order and without corruption (e.g., for file transfers, web browsing, or email), you'll use TCP. In Go's `net` package, you'll work with TCP when you create servers and clients that need a reliable connection.
+*   **TCP (Transmission Control Protocol):** TCP provides reliable, ordered,  
+and error-checked delivery of a stream of bytes between applications running  
+on hosts communicating via an IP network. When you need to ensure that all  
+data arrives in the correct order and without corruption (e.g., for file  
+transfers, web browsing, or email), you'll use TCP. In Go's `net` package,  
+you'll work with TCP when you create servers and clients that need a reliable  
+connection.  
 
-*   **UDP (User Datagram Protocol):** UDP is a simpler, connectionless protocol. It sends packets of data, called datagrams, but it doesn't guarantee their arrival, order, or error-checking. This makes it faster than TCP. UDP is suitable for applications where speed is more critical than reliability, such as video streaming, online gaming, or DNS lookups.
+*   **UDP (User Datagram Protocol):** UDP is a simpler, connectionless  
+protocol. It sends packets of data, called datagrams, but it doesn't  
+guarantee their arrival, order, or error-checking. This makes it faster than  
+TCP. UDP is suitable for applications where speed is more critical than  
+reliability, such as video streaming, online gaming, or DNS lookups.  
 
 ## The OSI Model Simplified
 
