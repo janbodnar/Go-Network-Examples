@@ -473,7 +473,7 @@ network servers in Go.
 
 ### 11. TCP Client with Timeout
 
-Sets a read/write deadline on a TCP connection.
+Sets a read/write deadline on a TCP connection.  
 
 ```go
 package main
@@ -510,11 +510,23 @@ func main() {
 }
 ```
 
+Network operations can hang indefinitely if the remote server becomes  
+unresponsive. Timeouts are essential for building robust network applications.  
+`SetWriteDeadline()` and `SetReadDeadline()` set absolute time limits for  
+write and read operations respectively. `time.Now().Add(5 * time.Second)`  
+creates a deadline 5 seconds from now. If the operation doesn't complete  
+by the deadline, it returns a timeout error. This example sends a raw  
+HTTP GET request to demonstrate timeouts. The `\r\n` sequences are HTTP  
+line endings, and the empty line after headers signals the end of the  
+HTTP request. Production code should handle timeout errors specifically  
+to distinguish them from other network errors.  
+
 ---
 
 ### 12. Graceful HTTP Server Shutdown
 
-Shows how to shut down an HTTP server gracefully, allowing active connections to finish.
+Shows how to shut down an HTTP server gracefully, allowing active  
+connections to finish.  
 
 ```go
 package main
@@ -562,11 +574,23 @@ func main() {
 }
 ```
 
+Graceful shutdown is crucial for production servers to avoid dropping  
+active requests when stopping or restarting. The server runs in a  
+goroutine, allowing the main thread to wait for shutdown signals.  
+`signal.Notify()` listens for SIGINT (Ctrl+C) and SIGTERM signals.  
+`<-quit` blocks until a signal is received. `server.Shutdown()` stops  
+accepting new connections and waits for active requests to complete.  
+The context with timeout ensures shutdown doesn't wait indefinitely.  
+The 2-second sleep in the handler simulates long-running requests to  
+demonstrate graceful handling. `http.ErrServerClosed` is expected when  
+the server shuts down normally. This pattern prevents data loss and  
+ensures a clean shutdown process.  
+
 ---
 
 ### 13. Simple WebSocket Server
 
-A basic WebSocket server that echoes messages back to the client.
+A basic WebSocket server that echoes messages back to the client.  
 
 ```go
 package main
@@ -612,11 +636,22 @@ func main() {
 ```
 *Note: This example requires the `gorilla/websocket` package: `go get github.com/gorilla/websocket`*
 
+WebSockets provide full-duplex communication between client and server  
+over a single TCP connection. The `websocket.Upgrader` converts a regular  
+HTTP connection to a WebSocket connection through the WebSocket handshake.  
+`ReadBufferSize` and `WriteBufferSize` control the I/O buffer sizes.  
+`upgrader.Upgrade()` performs the protocol upgrade from HTTP to WebSocket.  
+`ReadMessage()` blocks until a complete message is received, returning  
+the message type (text, binary, close, etc.) and payload. `WriteMessage()`  
+sends a message back to the client with the same type. The infinite loop  
+keeps the connection alive for bidirectional messaging. WebSockets are  
+ideal for real-time applications like chat, live updates, or gaming.  
+
 ---
 
 ### 14. Simple WebSocket Client
 
-A client to connect to the WebSocket echo server.
+A client to connect to the WebSocket echo server.  
 
 ```go
 package main
@@ -689,11 +724,23 @@ func main() {
 }
 ```
 
+This WebSocket client demonstrates proper connection lifecycle management.  
+`url.URL` constructs the WebSocket URL with "ws" scheme (or "wss" for  
+secure connections). `websocket.DefaultDialer.Dial()` establishes the  
+WebSocket connection. The client uses two concurrent operations: a  
+goroutine reads incoming messages continuously, while the main loop  
+handles sending messages and interrupt signals. `time.NewTicker(time.Second)`  
+sends a message every second with the current timestamp. The `select`  
+statement multiplexes between three channels: completion, timer, and  
+interrupt. Proper cleanup sends a close message before terminating the  
+connection. This pattern ensures graceful disconnection and demonstrates  
+real-time bidirectional communication.  
+
 ---
 
 ### 15. File Transfer Server (TCP)
 
-A server that sends a file to a connecting client.
+A server that sends a file to a connecting client.  
 
 ```go
 package main
@@ -738,6 +785,18 @@ func sendFile(conn net.Conn) {
 	log.Println("File sent successfully")
 }
 ```
+
+This server implements a simple file transfer protocol over TCP. When a  
+client connects, the server immediately starts sending the contents of  
+"send.txt". `os.Open()` opens the file for reading, returning a file  
+descriptor that implements `io.Reader`. `io.Copy(conn, file)` efficiently  
+streams the file data directly to the network connection without loading  
+the entire file into memory. This is crucial for large files as it uses  
+constant memory regardless of file size. Each client connection is handled  
+in a separate goroutine, allowing multiple concurrent file transfers.  
+The server assumes the file exists; production code should handle missing  
+files gracefully. The TCP connection is closed after the transfer,  
+signaling completion to the client.  
 
 ---
 
