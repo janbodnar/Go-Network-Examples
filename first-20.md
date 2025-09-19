@@ -802,7 +802,7 @@ signaling completion to the client.
 
 ### 16. File Transfer Client (TCP)
 
-A client that receives a file from the server.
+A client that receives a file from the server.  
 
 ```go
 package main
@@ -835,11 +835,23 @@ func main() {
 }
 ```
 
+This client complements the file transfer server by receiving and saving  
+the transmitted file. `net.Dial("tcp", "localhost:8080")` connects to the  
+server. `os.Create("received.txt")` creates a new file (or truncates an  
+existing one) for writing. `io.Copy(file, conn)` reads all data from the  
+network connection and writes it to the file until the connection is  
+closed by the server. This streaming approach handles files of any size  
+efficiently. The client knows the transfer is complete when the server  
+closes the connection (resulting in `io.EOF`). In real applications,  
+you might want to implement a protocol that includes file metadata like  
+filename, size, or checksums for verification. Error handling ensures  
+resources are cleaned up properly.  
+
 ---
 
 ### 17. UDP Broadcast
 
-A server that broadcasts a message to all devices on the local network.
+A server that broadcasts a message to all devices on the local network.  
 
 ```go
 package main
@@ -857,7 +869,7 @@ func main() {
 	}
 	defer conn.Close()
 
-_	for {
+	for {
 		message := "Hello, network!"
 		conn.Write([]byte(message))
 		log.Println("Broadcasted message:", message)
@@ -866,11 +878,23 @@ _	for {
 }
 ```
 
+UDP broadcast sends packets to all devices on a network segment  
+simultaneously. The special IP address "255.255.255.255" is the limited  
+broadcast address that reaches all hosts on the local network. This is  
+different from unicast (one-to-one) or multicast (one-to-many with  
+subscription). The `net.Dial()` creates a UDP connection to the broadcast  
+address. Each `conn.Write()` sends the message to all listening devices  
+on port 8080. Broadcasts are useful for service discovery, network  
+announcements, or games finding local players. Note that many routers  
+block broadcast traffic from crossing network boundaries for security  
+and performance reasons. The 2-second interval prevents flooding the  
+network with messages.  
+
 ---
 
 ### 18. Basic TCP Port Scanner
 
-A simple tool to check if specific ports are open on a host.
+A simple tool to check if specific ports are open on a host.  
 
 ```go
 package main
@@ -903,11 +927,24 @@ func main() {
 }
 ```
 
+This port scanner checks which TCP ports are accepting connections on a  
+target host. Port scanning is a fundamental network reconnaissance  
+technique used for security auditing and service discovery. The scanner  
+uses goroutines to test multiple ports concurrently, making it much  
+faster than sequential scanning. `sync.WaitGroup` ensures the main  
+function waits for all scanning goroutines to complete. Each goroutine  
+attempts to establish a TCP connection to a port; success indicates the  
+port is open and a service is listening. Failed connections typically  
+mean the port is closed or filtered by a firewall. The scanner tests  
+ports 1-1024, which include most well-known services. Real port scanners  
+implement more sophisticated techniques like SYN scanning, timeout  
+handling, and rate limiting.  
+
 ---
 
 ### 19. HTTP Server with Routing
 
-An HTTP server that uses `http.ServeMux` to handle different URL paths.
+An HTTP server that uses `http.ServeMux` to handle different URL paths.  
 
 ```go
 package main
@@ -938,11 +975,23 @@ func main() {
 }
 ```
 
+HTTP routing directs requests to appropriate handlers based on URL paths.  
+`http.NewServeMux()` creates a request multiplexer (router) that matches  
+incoming requests to registered patterns. Each `mux.HandleFunc()` call  
+registers a handler function for a specific path. The "/" pattern matches  
+the root path, "/about" matches exactly that path, and so on. When a  
+request arrives, the ServeMux finds the best matching pattern and calls  
+the corresponding handler. Anonymous functions (closures) are used here  
+for simplicity, but you could use named functions or methods. The ServeMux  
+is passed to `http.ListenAndServe()` instead of `nil`, giving you control  
+over routing. This pattern forms the foundation of web applications and  
+REST APIs in Go.  
+
 ---
 
 ### 20. Using context.Context in an HTTP Server
 
-Demonstrates how to use `context` to handle request cancellation.
+Demonstrates how to use `context` to handle request cancellation.  
 
 ```go
 package main
@@ -977,3 +1026,15 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 ```
+
+The `context` package enables request cancellation and timeout handling  
+in Go servers. Every HTTP request carries a context via `r.Context()`,  
+which is cancelled when the client disconnects or times out. The `select`  
+statement waits for either the work to complete (`time.After(5 * time.Second)`)  
+or the context to be cancelled (`ctx.Done()`). If a client closes their  
+browser or network connection before the 5-second operation completes,  
+`ctx.Done()` receives a signal and the handler can clean up resources  
+immediately. This prevents servers from continuing expensive operations  
+for clients that are no longer waiting. The context pattern is essential  
+for building responsive servers that handle client disconnections gracefully  
+and avoid resource waste on abandoned requests.  
